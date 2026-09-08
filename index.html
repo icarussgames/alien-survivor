@@ -212,8 +212,10 @@ function startRun() {
   }
   if (owned('cono')) unlock('cono');
   if (owned('piel')) unlock('piel');
-  t = 0; spawnT = 0.4; last = 0; runGems = 0; xp = 0; lvl = 1; xpNeed = 4; aliveTime = 0;
+  player.mods = { dmg:0, rate:0, mag:0, spread:0 };
+  t = 0; spawnT = 0.4; last = 0; runGems = 0; xp = 0; lvl = 1; xpNeed = 8; aliveTime = 0;
   setScreen('play');
+  canvas.focus();
   hud();
   if (!raf) raf = requestAnimationFrame(loop);
 }
@@ -274,18 +276,20 @@ function collect(g) {
   if (xp >= xpNeed) {
     xp -= xpNeed;
     lvl += 1;
-    xpNeed = 4 + lvl * 2;
+    xpNeed = 8 + lvl * 3;
     offerLevel();
   }
 }
 
 function offerLevel() {
+  const mods = player.mods || { dmg:0, rate:0, mag:0, spread:0 };
   const pool = [
     { id:'dmg', name:'Filo', desc:'+1 daño esta partida' },
-    { id:'rate', name:'Cadencia', desc:'Disparas más seguido' },
+    { id:'spread', name:'Amplitud', desc:'El disparo se abre en abanico' },
     { id:'mag', name:'Atracción', desc:'Imán de gemas esta partida' },
     { id:'heal', name:'Cura', desc:'Recupera 2 de vida' }
   ];
+  if ((mods.rate||0) < 3) pool.splice(1, 0, { id:'rate', name:'Cadencia', desc:'Un poco más seguido. Máximo 3.' });
   const picks = [];
   while (picks.length < 3 && pool.length) picks.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
   const box = document.getElementById('picks');
@@ -302,21 +306,29 @@ function offerLevel() {
 }
 
 function applyPick(id) {
-  if (!player.mods) player.mods = { dmg:0, rate:0, mag:0 };
+  if (!player.mods) player.mods = { dmg:0, rate:0, mag:0, spread:0 };
   if (id==='dmg') player.mods.dmg += 1;
-  if (id==='rate') player.mods.rate += 1;
+  if (id==='rate') player.mods.rate = Math.min(3, (player.mods.rate||0) + 1);
+  if (id==='spread') player.mods.spread = Math.min(5, (player.mods.spread||0) + 1);
   if (id==='mag') player.mods.mag += 28;
   if (id==='heal') player.hp = Math.min(player.maxHp, player.hp+2);
   setScreen('play');
 }
 
 function dmgNow() { return shotDmg() + ((player.mods && player.mods.dmg) || 0); }
-function fireRate() { return Math.max(0.18, 0.48 - ((player.mods && player.mods.rate) || 0)*0.07); }
+function fireRate() { return Math.max(0.40, 0.62 - ((player.mods && player.mods.rate) || 0)*0.06); }
+function spreadNow() { return (player.mods && player.mods.spread) || 0; }
 function magNow() { return magnet() + ((player.mods && player.mods.mag) || 0); }
 
 function shootAt(target) {
   const a = Math.atan2(target.y-player.y, target.x-player.x);
-  shots.push({ x:player.x, y:player.y, vx:Math.cos(a)*280, vy:Math.sin(a)*280, r:4, dmg:dmgNow(), life:1.2, c:'#00ffff' });
+  const n = 1 + spreadNow();
+  const width = spreadNow() * 0.18;
+  for (let i = 0; i < n; i++) {
+    const t = n === 1 ? 0 : (i / (n - 1) - 0.5);
+    const aa = a + t * width * 2;
+    shots.push({ x:player.x, y:player.y, vx:Math.cos(aa)*280, vy:Math.sin(aa)*280, r:4, dmg:dmgNow(), life:1.2, c:'#00ffff' });
+  }
   unlock('shot');
   beep(480, 0.05, 'square', 0.03);
 }
@@ -355,19 +367,24 @@ function update(dt) {
   }
 
   let mx = 0, my = 0;
-  if (keys['ArrowLeft']||keys['a']||keys['A']) mx -= 1;
-  if (keys['ArrowRight']||keys['d']||keys['D']) mx += 1;
-  if (keys['ArrowUp']||keys['w']||keys['W']) my -= 1;
-  if (keys['ArrowDown']||keys['s']||keys['S']) my += 1;
-  if (pointer.down) {
-    mx = pointer.x - player.x;
-    my = pointer.y - player.y;
-  }
-  const len = Math.hypot(mx, my);
-  if (len > 8) {
-    player.x += (mx/len) * moveSpeed() * dt;
-    player.y += (my/len) * moveSpeed() * dt;
+  if (held('ArrowLeft') || held('KeyA')) mx -= 1;
+  if (held('ArrowRight') || held('KeyD')) mx += 1;
+  if (held('ArrowUp') || held('KeyW')) my -= 1;
+  if (held('ArrowDown') || held('KeyS')) my += 1;
+  const keyLen = Math.hypot(mx, my);
+  if (keyLen > 0) {
+    player.x += (mx/keyLen) * moveSpeed() * dt;
+    player.y += (my/keyLen) * moveSpeed() * dt;
     player.ang = Math.atan2(my, mx);
+  } else if (pointer.down) {
+    const dx = pointer.x - player.x;
+    const dy = pointer.y - player.y;
+    const d = Math.hypot(dx, dy);
+    if (d > 12) {
+      player.x += (dx/d) * moveSpeed() * dt;
+      player.y += (dy/d) * moveSpeed() * dt;
+      player.ang = Math.atan2(dy, dx);
+    }
   }
   player.x = Math.max(18, Math.min(W-18, player.x));
   player.y = Math.max(18, Math.min(H-18, player.y));
@@ -583,20 +600,37 @@ function canvasPos(ev) {
   const src = ev.touches ? ev.touches[0] : ev;
   return { x:(src.clientX-r.left)*(W/r.width), y:(src.clientY-r.top)*(H/r.height) };
 }
+function held(code) { return !!keys[code]; }
+canvas.tabIndex = 0;
 canvas.addEventListener('pointerdown', function(ev){
   initAudio();
   pointer.down = true;
   const p = canvasPos(ev);
   pointer.x = p.x; pointer.y = p.y;
+  canvas.focus();
 });
 canvas.addEventListener('pointermove', function(ev){
   if (!pointer.down) return;
   const p = canvasPos(ev);
   pointer.x = p.x; pointer.y = p.y;
 });
-window.addEventListener('pointerup', function(){ pointer.down = false; });
-window.addEventListener('keydown', function(ev){ keys[ev.key] = true; initAudio(); });
-window.addEventListener('keyup', function(ev){ keys[ev.key] = false; });
+function clearPointer() { pointer.down = false; }
+window.addEventListener('pointerup', clearPointer);
+window.addEventListener('pointercancel', clearPointer);
+window.addEventListener('blur', function(){ pointer.down = false; keys = {}; });
+window.addEventListener('keydown', function(ev){
+  if (screen !== 'play') return;
+  const move = ev.code === 'ArrowLeft' || ev.code === 'ArrowRight' || ev.code === 'ArrowUp' || ev.code === 'ArrowDown'
+    || ev.code === 'KeyW' || ev.code === 'KeyA' || ev.code === 'KeyS' || ev.code === 'KeyD';
+  if (move) ev.preventDefault();
+  keys[ev.code] = true;
+  keys[ev.key] = true;
+  initAudio();
+});
+window.addEventListener('keyup', function(ev){
+  keys[ev.code] = false;
+  keys[ev.key] = false;
+});
 
 document.getElementById('startBtn').onclick = startRun;
 document.getElementById('retryBtn').onclick = startRun;
