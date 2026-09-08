@@ -122,6 +122,7 @@ function startRun() {
   if (owned('orbe')) orbs = [{ a:0 }, { a:Math.PI }];
   resetEnemies();
   resetRunStats();
+  resetWaves();
   aliveTime = 0; spawnT = 0.5; lastTs = 0;
   runGems = 0; xp = 0; lvl = 1; xpNeed = 10;
   bannerT = 0;
@@ -137,12 +138,12 @@ function update(dt) {
   if (aliveTime >= 60) unlock('acech');
   if (bannerT > 0) bannerT -= dt;
 
+  tickWaves(dt);
   spawnT -= dt;
-  const cap = Math.min(40, 6 + Math.floor(aliveTime / 18) + bossesDown * 4);
-  const every = Math.max(0.22, 1.2 - aliveTime * 0.0016 - bossesDown * 0.14);
-  if (spawnT <= 0 && enemies.length < cap) {
+  const wave = waveSpawn();
+  if (spawnT <= 0 && enemies.length < wave.cap) {
     spawnEnemy();
-    spawnT = every;
+    spawnT = wave.every;
   }
 
   const mv = moveVector();
