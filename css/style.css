@@ -14,6 +14,7 @@
   .btn { background:linear-gradient(45deg,#00f2fe,#4facfe); border:0; color:#fff; font-weight:800; border-radius:25px; padding:11px 26px; font-size:1rem; cursor:pointer; margin:4px; }
   .btn:active { transform:scale(.96); }
   .btn.ghost { background:transparent; border:1px solid rgba(0,255,255,.45); }
+  a.btn { display:inline-block; text-decoration:none; }
   .tips { margin-top:10px; color:#6a7199; font-size:.78rem; }
   .scroll { width:100%; max-height:70%; overflow:auto; display:flex; flex-direction:column; gap:8px; padding:4px; }
   .row { width:100%; text-align:left; background:rgba(15,20,40,.9); border:1px solid rgba(0,255,255,.25); border-radius:12px; padding:10px 12px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
