@@ -24,6 +24,18 @@ function enemyFace(e) {
   return '👽';
 }
 
+
+function enemyBars() {
+  const n = bossesDown|0;
+  if (n < 1) return 1;
+  const roll = Math.random();
+  const triple = n < 2 ? 0 : Math.min(0.12, 0.02 + (n - 2) * 0.02);
+  const doble = Math.min(0.4, 0.10 + (n - 1) * 0.05);
+  if (roll < triple) return 3;
+  if (roll < triple + doble) return 2;
+  return 1;
+}
+
 function spawnEnemy() {
   const edge = Math.floor(Math.random() * 4);
   let x = 0, y = 0;
@@ -37,8 +49,7 @@ function spawnEnemy() {
   if (roll < 0.272) kind = 'shooter';
   else if (roll < 0.552) kind = 'whip';
   const mult = kind === 'whip' ? 1.2 : (kind === 'shooter' ? 1.8 : 1.6);
-  const extra = Math.min(0.62, Math.max(0, (lvl|0) - 1) * 0.045 + bossesDown * 0.02);
-  const bars = 1 + (Math.random() < extra ? 1 : 0);
+  const bars = enemyBars();
   const hp = mult * sc.hp * bars;
   const spd = (kind === 'whip' ? 96 : (kind === 'shooter' ? 44 : 34)) * sc.spd;
   enemies.push({

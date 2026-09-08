@@ -284,18 +284,18 @@ function draw() {
       ctx.fill();
     }
     const bars = Math.max(1, e.bars || 1);
-    const gap = 2;
-    const w = Math.max(10, e.r * 2);
-    const seg = (w - gap * (bars - 1)) / bars;
+    const w = Math.max(12, e.r * 2);
     const per = e.max / bars;
-    for (let i = 0; i < bars; i++) {
-      const x = e.x - w / 2 + i * (seg + gap);
-      const left = e.hp - per * i;
-      ctx.fillStyle = 'rgba(0,0,0,.4)';
-      ctx.fillRect(x, e.y - e.r - 10, seg, 4);
-      ctx.fillStyle = e.kind === 'boss' ? '#ffcc66' : '#ff3366';
-      ctx.fillRect(x, e.y - e.r - 10, seg * Math.max(0, Math.min(1, left / per)), 4);
+    const leftLayers = Math.max(1, Math.ceil(e.hp / per - 1e-6));
+    const fill = Math.max(0, Math.min(1, (e.hp - (leftLayers - 1) * per) / per));
+    let color = '#ff3366';
+    if (leftLayers > 1) {
+      color = (bars >= 3 && leftLayers === 2) ? '#c084fc' : '#ffcc66';
     }
+    ctx.fillStyle = 'rgba(0,0,0,.45)';
+    ctx.fillRect(e.x - w / 2, e.y - e.r - 10, w, 5);
+    ctx.fillStyle = color;
+    ctx.fillRect(e.x - w / 2, e.y - e.r - 10, w * fill, 5);
   });
   enemyShots.forEach(function(s){
     ctx.fillStyle = '#ff4466';
