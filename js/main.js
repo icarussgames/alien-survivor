@@ -312,13 +312,7 @@ function boot() {
   document.getElementById('shopBtn2').onclick = openShop;
   document.getElementById('galBtn').onclick = openGal;
   document.getElementById('galBtn2').onclick = openGal;
-  document.getElementById('galPrev').onclick = function(){ galIndex = Math.max(0, galIndex-1); openGal(); };
-  document.getElementById('galNext').onclick = function(){ galIndex = Math.min(CHARS.length-1, galIndex+1); openGal(); };
-  document.getElementById('galBuy').onclick = function(){
-    if (photoLocked(CHARS[galIndex])) alert('Foto bloqueada. Desbloquéala jugando.');
-    else openLib();
-  };
-  document.getElementById('libBack').onclick = openGal;
+  if (document.getElementById('libBack')) document.getElementById('libBack').onclick = openGal;
   document.getElementById('galBack').onclick = function(){ setScreen(backScreen === 'over' ? 'over' : 'menu'); };
   document.getElementById('shopBack').onclick = function(){ setScreen(backScreen === 'over' ? 'over' : 'menu'); };
   document.getElementById('fs').onclick = function(){ document.getElementById('fs').classList.add('hidden'); };
