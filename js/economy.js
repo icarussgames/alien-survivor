@@ -64,7 +64,8 @@ function collectGem(g) {
 
 function pullGems() {
   gems.forEach(function(g){
-    if ((g.kind || 'gem') === 'gem') g.pull = true;
+    const kind = g.kind || 'gem';
+    if (kind === 'gem' || kind === 'heal' || kind === 'bomb') g.pull = true;
   });
   banner('IMÁN');
   beep(880, 0.1, 'sine', 0.05);

@@ -214,7 +214,8 @@ function update(dt) {
   const mag = magNow();
   gems.forEach(function(g){
     const d = Math.hypot(g.x - player.x, g.y - player.y);
-    const pull = (g.kind||'gem') === 'gem' && (g.pull || d < mag) && d > 1;
+    const kind = g.kind || 'gem';
+    const pull = (g.pull && kind !== 'magnet' && d > 1) || (kind === 'gem' && d < mag && d > 1);
     if (pull) {
       const spd = g.pull ? 520 : 160;
       g.x += (player.x - g.x) / d * spd * dt;
