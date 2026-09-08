@@ -14,7 +14,7 @@
   .cyan { color:#00ffff; } .mag { color:#ff00ff; } .hp { color:#ff6688; }
   #bar { position:absolute; left:12px; right:12px; bottom:12px; height:8px; border-radius:99px; background:rgba(255,255,255,.08); overflow:hidden; z-index:5; pointer-events:none; }
   #bar > i { display:block; height:100%; width:0%; background:linear-gradient(90deg,#39ff14,#00ffff); }
-  .overlay { position:absolute; inset:0; background:rgba(3,3,15,.92); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:20; padding:16px; text-align:center; backdrop-filter:blur(6px); }
+  .overlay { position:absolute; inset:0; background:rgba(3,3,15,.92); display:flex; flex-direction:column; align-items:center; justify-content:flex-start; z-index:20; padding:14px 12px 18px; text-align:center; backdrop-filter:blur(6px); overflow-y:auto; }
   .hidden { display:none !important; }
   h1 { font-size:1.7rem; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px; background:linear-gradient(45deg,#00ffff,#39ff14,#ff00ff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
   p { color:#9499c7; font-size:.92rem; line-height:1.4; max-width:340px; margin-bottom:14px; }
@@ -23,10 +23,10 @@
   .btn.ghost { background:transparent; border:1px solid rgba(0,255,255,.45); }
   .tips { margin-top:10px; color:#6a7199; font-size:.78rem; }
   .scroll { width:100%; max-height:70%; overflow:auto; display:flex; flex-direction:column; gap:8px; padding:4px; }
-  .row { width:100%; text-align:left; background:rgba(15,20,40,.9); border:1px solid rgba(0,255,255,.25); border-radius:12px; padding:10px 12px; display:flex; gap:10px; align-items:center; }
+  .row { width:100%; text-align:left; background:rgba(15,20,40,.9); border:1px solid rgba(0,255,255,.25); border-radius:12px; padding:10px 12px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
   .row b { display:block; font-size:.95rem; }
   .row span { color:#9499c7; font-size:.78rem; }
-  .row button { margin-left:auto; flex:none; }
+  .row .buy { width:100%; margin:0; }
   .row.lock { opacity:.45; }
   .grid { width:100%; max-height:70%; overflow:auto; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
   .gcard { background:#0b1024; border:1px solid rgba(255,0,255,.3); border-radius:12px; min-height:108px; padding:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
@@ -37,7 +37,7 @@
   .pick:active { transform:scale(.98); }
 
   .gal-row { display:flex; align-items:center; gap:8px; width:100%; justify-content:center; }
-  .photo-card { width:min(46vw, 220px); aspect-ratio:3/4; border-radius:12px; overflow:hidden; background:#000; border:1px solid rgba(255,0,255,.35); }
+  .photo-card { width:min(34vw, 150px); aspect-ratio:3/4; border-radius:12px; overflow:hidden; background:#000; border:1px solid rgba(255,0,255,.35); flex:none; }
   .photo-card img { width:100%; height:100%; object-fit:cover; object-position:top center; }
   .stars { color:#fbbf24; letter-spacing:2px; margin:8px 0; font-size:1rem; }
   .lib-grid { width:100%; display:grid; grid-template-columns:1fr 1fr; gap:8px; max-height:52%; overflow:auto; }
@@ -137,11 +137,11 @@ const CHARS = [
 const RESTRICTED = new Set(['char_1_s2_pose','char_2_s1_pose','char_2_s2_pose','char_3_s1_outfit','char_3_s1_pose','char_3_s2_outfit','char_3_s2_pose']);
 const PHOTO_AT = [25, 90, 220];
 const TOKENS = [
-  { at:40, cost:12 },
-  { at:55, cost:16 },
-  { at:120, cost:22 },
+  { at:25, cost:12 },
+  { at:50, cost:16 },
+  { at:100, cost:22 },
   { at:150, cost:28 },
-  { at:260, cost:36 }
+  { at:240, cost:36 }
 ];
 let galIndex = 0;
 let libChar = null;
@@ -268,9 +268,12 @@ function spawnEnemy() {
   if (edge===1) { x = W+18; y = Math.random()*H; }
   if (edge===2) { x = Math.random()*W; y = H+18; }
   if (edge===3) { x = -18; y = Math.random()*H; }
-  const big = aliveTime > 75 && Math.random() < 0.08;
-  const hp = big ? 6 : (aliveTime > 90 ? 2 : 1);
-  enemies.push({ x:x, y:y, r: big?20:11+Math.random()*2, hp:hp, max:hp, big:big, spd: (big?34:46) + Math.min(28, aliveTime*0.18) });
+  const min = aliveTime / 60;
+  const rush = aliveTime > 150 && Math.random() < 0.28;
+  const big = aliveTime > 160 && Math.random() < Math.min(0.22, 0.06 + min * 0.03);
+  const hp = big ? 4 + Math.floor(min) : (1 + Math.floor(aliveTime / 80));
+  const spd = rush ? 78 + Math.min(55, aliveTime * 0.16) : ((big ? 40 : 48) + Math.min(62, aliveTime * 0.16));
+  enemies.push({ x:x, y:y, r: rush ? 9 : (big ? 20 : 12), hp:hp, max:hp, big:big, rush:rush, spd:spd });
 }
 
 function nearest() {
@@ -285,7 +288,7 @@ function nearest() {
 function hurt(n) {
   if (player.ifr > 0) return;
   player.hp -= n;
-  player.ifr = 0.85;
+  player.ifr = 0.6;
   beep(140, 0.12, 'sawtooth', 0.06);
   if (player.hp <= 0) endRun();
 }
@@ -299,6 +302,18 @@ function endRun() {
 }
 
 function collect(g) {
+  const kind = g.kind || 'gem';
+  if (kind === 'bomb') { boom(g.x, g.y); return; }
+  if (kind === 'up') {
+    const pick = ['dmg','heal','mag'][Math.floor(Math.random()*3)];
+    if (!player.mods) player.mods = { dmg:0, rate:0, mag:0, spread:0 };
+    if (pick === 'dmg') player.mods.dmg += 1;
+    if (pick === 'mag') player.mods.mag += 16;
+    if (pick === 'heal') player.hp = Math.min(player.maxHp, player.hp + 2);
+    particles.push({ x:g.x, y:g.y, vx:0, vy:-24, life:0.4, c:'#7af7ff', s:5 });
+    beep(540, 0.08, 'square', 0.04);
+    return;
+  }
   runGems += g.v;
   save.gems += g.v;
   save.life = (save.life|0) + g.v;
@@ -311,7 +326,7 @@ function collect(g) {
   if (xp >= xpNeed) {
     xp -= xpNeed;
     lvl += 1;
-    xpNeed = 8 + lvl * 3;
+    xpNeed = 10 + lvl * 4;
     offerLevel();
   }
 }
@@ -383,14 +398,26 @@ function coneAt(target) {
   beep(320, 0.06, 'square', 0.03);
 }
 
+function rollDrop(x, y, big) {
+  const roll = Math.random();
+  if (roll < 0.18) return { kind:'bomb', x:x, y:y, v:0, r:8 };
+  if (roll < 0.32) return { kind:'up', x:x, y:y, v:0, r:8 };
+  return { kind:'gem', x:x, y:y, v: big ? 3 : 1, r: big ? 9 : 6 };
+}
+function boom(x, y) {
+  enemies.slice().forEach(function(en){
+    if (Math.hypot(en.x-x, en.y-y) < 92) hitEnemy(en, 99);
+  });
+  for (let i = 0; i < 14; i++) particles.push({ x:x, y:y, vx:(Math.random()-0.5)*180, vy:(Math.random()-0.5)*180, life:0.45, c:'#ff8844', s:5 });
+  beep(90, 0.18, 'sawtooth', 0.07);
+}
 function hitEnemy(e, dmg) {
   e.hp -= dmg;
   particles.push({ x:e.x, y:e.y, vx:(Math.random()-0.5)*40, vy:(Math.random()-0.5)*40, life:0.25, c:'#39ff14', s:3 });
   if (e.hp <= 0) {
     unlock('alien');
     if (e.big) unlock('acech');
-    const drop = Math.random() < 0.82;
-    if (drop) gems.push({ x:e.x, y:e.y, v: e.big ? 3 : 1, r: e.big?9:6 });
+    if (Math.random() < 0.9) gems.push(rollDrop(e.x, e.y, e.big));
     enemies.splice(enemies.indexOf(e),1);
   }
 }
@@ -401,8 +428,8 @@ function update(dt) {
   if (aliveTime >= 60) unlock('acech');
 
   spawnT -= dt;
-  const cap = Math.min(22, 5 + Math.floor(aliveTime/10));
-  const every = Math.max(0.48, 1.45 - aliveTime*0.006);
+  const cap = Math.min(32, 6 + Math.floor(aliveTime/16));
+  const every = Math.max(0.28, 1.28 - aliveTime*0.0024);
   if (spawnT <= 0 && enemies.length < cap) {
     spawnEnemy();
     spawnT = every;
@@ -484,7 +511,7 @@ function update(dt) {
   const mag = magNow();
   gems.forEach(function(g){
     const d = Math.hypot(g.x-player.x, g.y-player.y);
-    if (d < mag && d > 1) {
+    if ((g.kind||'gem') === 'gem' && d < mag && d > 1) {
       g.x += (player.x-g.x)/d * 160 * dt;
       g.y += (player.y-g.y)/d * 160 * dt;
     }
@@ -518,10 +545,22 @@ function draw() {
   gems.forEach(function(g){
     ctx.save();
     ctx.translate(g.x, g.y);
-    ctx.fillStyle = '#ff00ff';
-    ctx.beginPath();
-    ctx.moveTo(0, -g.r-2); ctx.lineTo(g.r, 0); ctx.lineTo(0, g.r+2); ctx.lineTo(-g.r, 0);
-    ctx.closePath(); ctx.fill();
+    const kind = g.kind || 'gem';
+    if (kind === 'bomb') {
+      ctx.fillStyle = '#ff6633';
+      ctx.beginPath(); ctx.arc(0, 0, g.r, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(-2, -g.r-3, 4, 5);
+    } else if (kind === 'up') {
+      ctx.fillStyle = '#7af7ff';
+      ctx.fillRect(-g.r, -3, g.r*2, 6);
+      ctx.fillRect(-3, -g.r, 6, g.r*2);
+    } else {
+      ctx.fillStyle = '#ff00ff';
+      ctx.beginPath();
+      ctx.moveTo(0, -g.r-2); ctx.lineTo(g.r, 0); ctx.lineTo(0, g.r+2); ctx.lineTo(-g.r, 0);
+      ctx.closePath(); ctx.fill();
+    }
     ctx.restore();
   });
 
@@ -594,12 +633,14 @@ function openShop() {
     left.innerHTML = '<b>'+u.icon+' '+u.name+'</b><span>'+u.desc+' · '+have+'/'+u.max+'</span>';
     row.appendChild(left);
     const b = document.createElement('button');
-    b.className = 'btn';
-    b.textContent = have >= u.max ? 'Listo' : (open ? price(u)+' 💎' : 'Bloq.');
-    b.disabled = !open || have >= u.max || save.gems < price(u);
+    b.className = 'btn buy';
+    b.textContent = have >= u.max ? 'Listo' : (open ? 'Comprar 💎'+price(u) : 'Bloqueada');
+    b.disabled = have >= u.max;
     b.onclick = function(){
       const c = price(u);
-      if (save.gems < c || have >= u.max) return;
+      if (!open) return;
+      if (save.gems < c) { alert('Te faltan '+(c-save.gems)+' gemas.'); return; }
+      if (have >= u.max) return;
       save.gems -= c;
       save.up[u.id] = have + 1;
       if (u.id==='orbe') unlock('orbe');
@@ -647,7 +688,7 @@ function openGal() {
     ? 'Gemas de por vida '+save.life+' / '+need+' para la siguiente foto.'
     : 'Fotos de la demo reveladas. Los sets se compran con gemas.';
   const btn = document.getElementById('galBuy');
-  btn.textContent = locked ? 'Foto bloqueada' : 'Outfits y poses';
+  btn.textContent = locked ? 'Foto bloqueada' : 'Comprar outfits y poses';
   btn.style.background = locked ? '#475569' : '';
   document.getElementById('galPrev').disabled = galIndex === 0;
   document.getElementById('galNext').disabled = galIndex === CHARS.length - 1;
@@ -697,6 +738,7 @@ function openLib() {
     else if (!tokenOpen) { b.textContent = 'Ticket bloqueado'; b.style.background = '#334155'; b.disabled = true; }
     else {
       b.textContent = 'Comprar 💎'+token.cost;
+      b.className = 'buy';
       b.style.background = '#2563eb';
       b.onclick = function(){
         if (save.gems < token.cost) { alert('Te faltan '+(token.cost-save.gems)+' gemas.'); return; }
