@@ -315,17 +315,35 @@ function draw() {
   ctx.globalAlpha = player.ifr > 0 && Math.floor(player.ifr * 16) % 2 === 0 ? 0.35 : 1;
   ctx.translate(player.x, player.y);
   ctx.rotate(player.ang);
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 1.6;
+  function wing(sign) {
+    ctx.beginPath();
+    ctx.moveTo(13, sign * 4);
+    ctx.lineTo(9, sign * 7);
+    ctx.lineTo(-8, sign * 5);
+    ctx.lineTo(-13, sign * 16);
+    ctx.closePath();
+    ctx.fillStyle = col.b;
+    ctx.strokeStyle = col.a;
+    ctx.fill();
+    ctx.stroke();
+  }
+  wing(-1);
+  wing(1);
+  ctx.beginPath();
+  ctx.arc(1, 0, 5.2, 0, Math.PI * 2);
   ctx.fillStyle = col.b;
-  ctx.beginPath(); ctx.ellipse(-2, 2, 8, 11, 0, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = col.a;
-  ctx.beginPath(); ctx.arc(6, 0, 7, 0, Math.PI*2); ctx.fill();
+  ctx.fill();
+  ctx.strokeStyle = col.a;
+  ctx.stroke();
   if (player.hitFlash > 0) {
-    ctx.fillStyle = 'rgba(255,60,80,.7)';
-    ctx.beginPath(); ctx.arc(2, 0, 16, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,60,80,.55)';
+    ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI*2); ctx.fill();
   }
   if (player.healFlash > 0) {
-    ctx.fillStyle = 'rgba(80,255,160,.7)';
-    ctx.beginPath(); ctx.arc(2, 0, 18, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(80,255,160,.55)';
+    ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI*2); ctx.fill();
   }
   ctx.restore();
   ctx.globalAlpha = 1;
