@@ -35,6 +35,17 @@
   .gcard small { color:#8b90b8; font-size:.72rem; text-align:center; }
   .pick { width:100%; max-width:320px; background:#10162e; border:1px solid rgba(0,255,255,.35); color:#fff; border-radius:12px; padding:12px; margin:6px 0; cursor:pointer; text-align:left; }
   .pick:active { transform:scale(.98); }
+
+  .gal-row { display:flex; align-items:center; gap:8px; width:100%; justify-content:center; }
+  .photo-card { width:min(46vw, 220px); aspect-ratio:3/4; border-radius:12px; overflow:hidden; background:#000; border:1px solid rgba(255,0,255,.35); }
+  .photo-card img { width:100%; height:100%; object-fit:cover; object-position:top center; }
+  .stars { color:#fbbf24; letter-spacing:2px; margin:8px 0; font-size:1rem; }
+  .lib-grid { width:100%; display:grid; grid-template-columns:1fr 1fr; gap:8px; max-height:52%; overflow:auto; }
+  .cosm { background:#0b1024; border-radius:10px; overflow:hidden; }
+  .cosm img { width:100%; aspect-ratio:3/4; object-fit:cover; object-position:top center; display:block; }
+  .cosm button { width:100%; border:0; color:#fff; font-weight:700; font-size:.72rem; padding:7px 4px; cursor:pointer; }
+  #fs { position:absolute; inset:0; background:rgba(0,0,0,.94); z-index:40; display:flex; align-items:center; justify-content:center; }
+  #fs img { max-width:92%; max-height:92%; object-fit:contain; }
 </style>
 </head>
 <body>
@@ -84,10 +95,23 @@
 
   <div id="gal" class="overlay hidden">
     <h1>Galería</h1>
-    <p>Las cartas se revelan al jugar y al comprar mejoras.</p>
-    <div class="grid" id="galGrid"></div>
+    <p id="galHint">Las fotos se revelan con gemas de por vida. Luego se compran outfits y poses.</p>
+    <div class="gal-row">
+      <button class="btn ghost" id="galPrev">❮</button>
+      <div class="photo-card"><img id="galImg" alt=""></div>
+      <button class="btn ghost" id="galNext">❯</button>
+    </div>
+    <div class="stars" id="galStars"></div>
+    <button class="btn" id="galBuy">Fotos bloqueada</button>
     <button class="btn ghost" id="galBack">VOLVER</button>
   </div>
+  <div id="lib" class="overlay hidden">
+    <h1>Sets</h1>
+    <p>Gemas: <span id="libGems" class="mag">0</span></p>
+    <div class="lib-grid" id="libGrid"></div>
+    <button class="btn ghost" id="libBack">VOLVER</button>
+  </div>
+  <div id="fs" class="hidden"><img id="fsImg" alt=""></div>
 </div>
 <script>
 const canvas = document.getElementById('c');
@@ -105,17 +129,22 @@ const TREE = [
   { id:'piel', name:'Piel neón', desc:'Skin equipable.', cost:40, max:1, icon:'🌈' }
 ];
 
-const CARDS = [
-  { id:'surv', name:'Superviviente', desc:'El que aguanta la oleada.', icon:'🧑‍🚀', equip:true },
-  { id:'shot', name:'Disparo', desc:'Rayo automático.', icon:'💠' },
-  { id:'alien', name:'Alienígena', desc:'Sale del borde y camina hacia ti.', icon:'👽' },
-  { id:'gema', name:'Gema', desc:'Se guarda al tocarla.', icon:'💎' },
-  { id:'oleada', name:'Oleada', desc:'Aguanta 30 segundos.', icon:'🌊' },
-  { id:'orbe', name:'Orbe', desc:'Arma comprada.', icon:'🟣' },
-  { id:'cono', name:'Cono', desc:'Arma comprada.', icon:'🔶' },
-  { id:'piel', name:'Piel neón', desc:'Skin de la tienda.', icon:'🌈', equip:true },
-  { id:'acech', name:'Acechador', desc:'El grande de la oleada.', icon:'👾' }
+const CHARS = [
+  { id:'char_1', level:1, base:'assets/char1_base.jpg', s1:{outfit:'assets/char1_t1.jpg', pose:'assets/char1_p1.jpg'}, s2:{outfit:'assets/char1_t2.jpg', pose:'assets/char1_p2.jpg'} },
+  { id:'char_2', level:2, base:'assets/char2_base.jpg', s1:{outfit:'assets/char2_t1.jpg', pose:'assets/char2_p1.jpg'}, s2:{outfit:'assets/char2_t2.jpg', pose:'assets/char2_p2.jpg'} },
+  { id:'char_3', level:3, base:'assets/char3_base.jpg', s1:{outfit:'assets/char3_t1.jpg', pose:'assets/char3_p1.jpg'}, s2:{outfit:'assets/char3_t2.jpg', pose:'assets/char3_p2.jpg'} }
 ];
+const RESTRICTED = new Set(['char_1_s2_pose','char_2_s1_pose','char_2_s2_pose','char_3_s1_outfit','char_3_s1_pose','char_3_s2_outfit','char_3_s2_pose']);
+const PHOTO_AT = [25, 90, 220];
+const TOKENS = [
+  { at:40, cost:12 },
+  { at:55, cost:16 },
+  { at:120, cost:22 },
+  { at:150, cost:28 },
+  { at:260, cost:36 }
+];
+let galIndex = 0;
+let libChar = null;
 
 let save = loadSave();
 let screen = 'menu';
@@ -135,12 +164,16 @@ function loadSave() {
     const raw = JSON.parse(localStorage.getItem(LS) || '{}');
     return {
       gems: raw.gems|0,
+      life: raw.life|0 || raw.gems|0,
       up: raw.up || {},
       gal: raw.gal || ['surv','shot'],
-      skin: raw.skin || 'surv'
+      skin: raw.skin || 'surv',
+      photo: raw.photo|0 || 1,
+      cosm: raw.cosm || {},
+      bought: raw.bought|0
     };
   } catch (e) {
-    return { gems:0, up:{}, gal:['surv','shot'], skin:'surv' };
+    return { gems:0, life:0, up:{}, gal:['surv','shot'], skin:'surv', photo:1, cosm:{}, bought:0 };
   }
 }
 function persist() { localStorage.setItem(LS, JSON.stringify(save)); }
@@ -188,7 +221,7 @@ function fmt(sec) {
   return m + ':' + (s<10?'0':'') + s;
 }
 function show(id) {
-  ['menu','over','level','shop','gal','hud','bar'].forEach(function(n){
+  ['menu','over','level','shop','gal','lib','hud','bar'].forEach(function(n){
     document.getElementById(n).classList.toggle('hidden', n !== id && !(id==='play' && (n==='hud'||n==='bar')));
   });
   if (id === 'play') {
@@ -268,7 +301,9 @@ function endRun() {
 function collect(g) {
   runGems += g.v;
   save.gems += g.v;
+  save.life = (save.life|0) + g.v;
   unlock('gema');
+  syncPhotos();
   persist();
   xp += g.v;
   beep(720, 0.07, 'square', 0.04);
@@ -572,27 +607,108 @@ function openShop() {
   setScreen('shop');
 }
 
+function syncPhotos() {
+  save.photo = save.photo|0 || 1;
+  save.life = save.life|0;
+  while (save.photo <= 3 && save.life >= PHOTO_AT[save.photo - 1]) save.photo++;
+}
+function photoLocked(char) { return char.level >= (save.photo|0 || 1); }
+function cosmOn(key) { return save.cosm && save.cosm[key] === true; }
+function nextToken() {
+  const i = save.bought|0;
+  return i < TOKENS.length ? TOKENS[i] : null;
+}
 function openGal() {
-  backScreen = screen === 'over' ? 'over' : 'menu';
-  const grid = document.getElementById('galGrid');
-  grid.innerHTML = '';
-  CARDS.forEach(function(c){
-    const on = hasCard(c.id);
-    const el = document.createElement('div');
-    el.className = 'gcard' + (on ? '' : ' lock');
-    el.innerHTML = '<div class="ico">'+(on?c.icon:'█')+'</div><b>'+(on?c.name:'???')+'</b><small>'+(on?c.desc:'Aún cerrada')+'</small>';
-    if (on && c.equip) {
-      const b = document.createElement('button');
-      b.className = 'btn';
-      b.style.padding = '4px 10px';
-      b.style.fontSize = '.75rem';
-      b.textContent = save.skin===c.id ? 'Equipada' : 'Equipar';
-      b.onclick = function(ev){ ev.stopPropagation(); save.skin = c.id; persist(); openGal(); };
-      el.appendChild(b);
-    }
-    grid.appendChild(el);
-  });
+  backScreen = (screen === 'over' || screen === 'lib') ? (backScreen === 'over' ? 'over' : (screen === 'over' ? 'over' : 'menu')) : (screen === 'play' ? 'menu' : (screen === 'shop' ? 'menu' : screen));
+  if (screen === 'over') backScreen = 'over';
+  else if (screen !== 'lib') backScreen = 'menu';
+  syncPhotos();
+  const char = CHARS[galIndex];
+  const locked = photoLocked(char);
+  const img = document.getElementById('galImg');
+  img.src = char.base;
+  img.style.filter = locked ? 'blur(35px)' : 'blur(0px)';
+  let stars = locked ? 0 : 1;
+  if (!locked) {
+    ['s1_outfit','s1_pose','s2_outfit','s2_pose'].forEach(function(k){ if (cosmOn(char.id+'_'+k)) stars++; });
+  }
+  let html = '';
+  for (let i = 0; i < 5; i++) html += '<span style="color:'+(i<stars?'#fbbf24':'#334155')+'">★</span>';
+  document.getElementById('galStars').innerHTML = html;
+  const need = save.photo <= 3 ? PHOTO_AT[save.photo-1] : null;
+  document.getElementById('galHint').textContent = need
+    ? 'Gemas de por vida '+save.life+' / '+need+' para la siguiente foto.'
+    : 'Fotos de la demo reveladas. Los sets se compran con gemas.';
+  const btn = document.getElementById('galBuy');
+  btn.textContent = locked ? 'Foto bloqueada' : 'Outfits y poses';
+  btn.style.background = locked ? '#475569' : '';
+  document.getElementById('galPrev').disabled = galIndex === 0;
+  document.getElementById('galNext').disabled = galIndex === CHARS.length - 1;
   setScreen('gal');
+}
+function openLib() {
+  const char = CHARS[galIndex];
+  if (photoLocked(char)) return;
+  libChar = char;
+  document.getElementById('libGems').textContent = save.gems;
+  const grid = document.getElementById('libGrid');
+  grid.innerHTML = '';
+  function addBase() {
+    const box = document.createElement('div');
+    box.className = 'cosm';
+    box.innerHTML = '<img src="'+char.base+'" alt=""><button type="button">Base</button>';
+    box.querySelector('button').style.background = '#0f766e';
+    box.querySelector('img').onclick = function(){ showFs(char.base); };
+    grid.appendChild(box);
+  }
+  addBase();
+  const items = [
+    ['s1_outfit', char.s1.outfit, true],
+    ['s1_pose', char.s1.pose, cosmOn(char.id+'_s1_outfit')],
+    ['s2_outfit', char.s2.outfit, true],
+    ['s2_pose', char.s2.pose, cosmOn(char.id+'_s2_outfit')]
+  ];
+  items.forEach(function(it){
+    const key = char.id+'_'+it[0];
+    const on = cosmOn(key);
+    const restricted = RESTRICTED.has(key);
+    const token = nextToken();
+    const tokenOpen = !!(token && save.life >= token.at);
+    const box = document.createElement('div');
+    box.className = 'cosm';
+    const im = document.createElement('img');
+    im.src = it[1];
+    im.style.filter = on ? 'blur(0px)' : 'blur(35px)';
+    im.onclick = function(){
+      if (on) showFs(it[1]);
+      else if (restricted) alert('Bloqueado en la demo.');
+    };
+    const b = document.createElement('button');
+    if (on) { b.textContent = 'Comprado'; b.style.background = '#16a34a'; b.disabled = true; }
+    else if (restricted) { b.textContent = 'Demo'; b.style.background = '#d97706'; b.onclick = function(){ alert('Bloqueado en la demo.'); }; }
+    else if (!it[2]) { b.textContent = 'Falta el outfit'; b.style.background = '#334155'; b.disabled = true; }
+    else if (!tokenOpen) { b.textContent = 'Ticket bloqueado'; b.style.background = '#334155'; b.disabled = true; }
+    else {
+      b.textContent = 'Comprar 💎'+token.cost;
+      b.style.background = '#2563eb';
+      b.onclick = function(){
+        if (save.gems < token.cost) { alert('Te faltan '+(token.cost-save.gems)+' gemas.'); return; }
+        save.gems -= token.cost;
+        save.bought = (save.bought|0) + 1;
+        save.cosm[key] = true;
+        persist();
+        openLib();
+      };
+    }
+    box.appendChild(im);
+    box.appendChild(b);
+    grid.appendChild(box);
+  });
+  setScreen('lib');
+}
+function showFs(src) {
+  document.getElementById('fsImg').src = src;
+  document.getElementById('fs').classList.remove('hidden');
 }
 
 function canvasPos(ev) {
@@ -638,10 +754,19 @@ document.getElementById('shopBtn').onclick = openShop;
 document.getElementById('shopBtn2').onclick = openShop;
 document.getElementById('galBtn').onclick = openGal;
 document.getElementById('galBtn2').onclick = openGal;
+document.getElementById('galPrev').onclick = function(){ galIndex = Math.max(0, galIndex-1); openGal(); };
+document.getElementById('galNext').onclick = function(){ galIndex = Math.min(CHARS.length-1, galIndex+1); openGal(); };
+document.getElementById('galBuy').onclick = function(){
+  const char = CHARS[galIndex];
+  if (photoLocked(char)) alert('Foto '+char.level+' bloqueada. Desbloquéala jugando.');
+  else openLib();
+};
+document.getElementById('libBack').onclick = openGal;
+document.getElementById('fs').onclick = function(){ document.getElementById('fs').classList.add('hidden'); };
 document.getElementById('shopBack').onclick = function(){ setScreen(backScreen==='play'?'menu':backScreen); };
-document.getElementById('galBack').onclick = function(){ setScreen(backScreen); };
+document.getElementById('galBack').onclick = function(){ setScreen(backScreen === 'gal' || backScreen === 'lib' ? 'menu' : backScreen); };
 document.getElementById('wipe').onclick = function(){
-  save = { gems:0, up:{}, gal:['surv','shot'], skin:'surv' };
+  save = { gems:0, life:0, up:{}, gal:['surv','shot'], skin:'surv', photo:1, cosm:{}, bought:0 };
   persist();
   openShop();
 };
