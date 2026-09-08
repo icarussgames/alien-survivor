@@ -1,56 +1,45 @@
 // ==================== GALERÍA ====================
-// Fotos propias se guardan en este navegador (IndexedDB), no en GitHub.
+// Las fotos del pack van en pack/char1, pack/char2 y pack/char3.
+// Si un archivo no está, se usa la imagen de assets/.
 
-var customSrc = {};
+var packSrc = {};
 
-function galDb() {
-  return new Promise(function(resolve, reject) {
-    const req = indexedDB.open('as_gallery', 1);
-    req.onupgradeneeded = function() { req.result.createObjectStore('imgs'); };
-    req.onsuccess = function() { resolve(req.result); };
-    req.onerror = function() { reject(req.error); };
+var PACK_SLOTS = ['base', 's1_outfit', 's1_pose', 's2_outfit', 's2_pose'];
+var PACK_EXT = ['jpg', 'jpeg', 'png', 'webp'];
+
+function packFolder(char) {
+  return 'pack/char' + char.level;
+}
+
+function probeImage(url) {
+  return new Promise(function(resolve) {
+    const img = new Image();
+    img.onload = function() { resolve(url); };
+    img.onerror = function() { resolve(null); };
+    img.src = url;
   });
 }
 
-function putCustom(slot, blob) {
-  return galDb().then(function(db) {
-    return new Promise(function(resolve, reject) {
-      const tx = db.transaction('imgs', 'readwrite');
-      tx.objectStore('imgs').put(blob, slot);
-      tx.oncomplete = function() { resolve(); };
-      tx.onerror = function() { reject(tx.error); };
+function findPackFile(folder, slot) {
+  var chain = Promise.resolve(null);
+  PACK_EXT.forEach(function(ext) {
+    chain = chain.then(function(found) {
+      if (found) return found;
+      return probeImage(folder + '/' + slot + '.' + ext);
     });
   });
+  return chain;
 }
 
-function dropCustom(slot) {
-  return galDb().then(function(db) {
-    return new Promise(function(resolve, reject) {
-      const tx = db.transaction('imgs', 'readwrite');
-      tx.objectStore('imgs').delete(slot);
-      tx.oncomplete = function() { resolve(); };
-      tx.onerror = function() { reject(tx.error); };
+function loadPack(char) {
+  const folder = packFolder(char);
+  return Promise.all(PACK_SLOTS.map(function(slot) {
+    const key = char.id + '_' + slot;
+    return findPackFile(folder, slot).then(function(url) {
+      if (url) packSrc[key] = url;
+      else delete packSrc[key];
     });
-  });
-}
-
-function loadCustom(slot) {
-  return galDb().then(function(db) {
-    return new Promise(function(resolve, reject) {
-      const req = db.transaction('imgs').objectStore('imgs').get(slot);
-      req.onsuccess = function() { resolve(req.result || null); };
-      req.onerror = function() { reject(req.error); };
-    });
-  }).then(function(blob) {
-    if (!blob) {
-      if (customSrc[slot]) URL.revokeObjectURL(customSrc[slot]);
-      delete customSrc[slot];
-      return null;
-    }
-    if (customSrc[slot]) URL.revokeObjectURL(customSrc[slot]);
-    customSrc[slot] = URL.createObjectURL(blob);
-    return customSrc[slot];
-  });
+  }));
 }
 
 function syncPhotos() {
@@ -68,16 +57,14 @@ function photoLocked(char) {
 function cosmOn(key) { return !!(save.cosm && save.cosm[key]); }
 
 function slotSrc(slot, fallback) {
-  return customSrc[slot] || fallback;
+  return packSrc[slot] || fallback;
 }
 
 function openGal() {
   if (screen === 'over') backScreen = 'over';
   else if (screen !== 'lib') backScreen = 'menu';
   syncPhotos();
-  const char = CHARS[galIndex];
-  const slots = [char.id+'_base', char.id+'_s1_outfit', char.id+'_s1_pose', char.id+'_s2_outfit', char.id+'_s2_pose'];
-  Promise.all(slots.map(loadCustom)).then(function() {
+  loadPack(CHARS[galIndex]).then(function() {
     renderGal();
     setScreen('gal');
   }).catch(function() {
@@ -87,7 +74,7 @@ function openGal() {
 }
 
 function renderGal() {
-  document.getElementById('galHint').textContent = 'Gemas: ' + save.gems + ' · de por vida ' + (save.life|0) + ' · Tu foto queda solo en este navegador';
+  document.getElementById('galHint').textContent = 'Gemas: ' + save.gems + ' · de por vida ' + (save.life|0);
   const tabs = document.getElementById('galTabs');
   tabs.innerHTML = '';
   CHARS.forEach(function(char, i){
@@ -107,29 +94,28 @@ function renderGal() {
 
   function row(label, fallback, slot, buyKey, cost, prereq) {
     const src = slotSrc(slot, fallback);
-    const custom = !!customSrc[slot];
     const el = document.createElement('div');
     el.className = 'gal-item';
     const img = document.createElement('img');
     img.src = src;
     img.alt = label;
     const owned = buyKey ? cosmOn(buyKey) : true;
-    if ((locked || (buyKey && !owned)) && !custom) img.style.filter = 'blur(18px)';
+    if (locked || (buyKey && !owned)) img.style.filter = 'blur(18px)';
     const meta = document.createElement('div');
     meta.className = 'meta';
     const title = document.createElement('b');
-    title.textContent = label + (custom ? ' · tuya' : '');
+    title.textContent = label;
     const sub = document.createElement('span');
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'btn buy';
-    if (locked && !custom) {
+    if (locked) {
       sub.textContent = 'Se abre con ' + need + ' gemas de por vida';
       btn.textContent = 'Bloqueada';
       btn.disabled = true;
-    } else if (!buyKey || owned || custom) {
-      if (owned || custom) img.style.filter = 'none';
-      sub.textContent = custom ? 'Foto local' : (buyKey ? 'Comprado' : 'Ya visible');
+    } else if (!buyKey || owned) {
+      img.style.filter = 'none';
+      sub.textContent = buyKey ? 'Comprado' : 'Ya visible';
       btn.textContent = 'Ver';
       btn.onclick = function(){ showFs(src); };
     } else if (!prereq) {
@@ -149,40 +135,9 @@ function renderGal() {
       };
     }
 
-    const pick = document.createElement('button');
-    pick.type = 'button';
-    pick.className = 'btn ghost';
-    pick.textContent = custom ? 'Cambiar' : 'Tu foto';
-    pick.onclick = function(){
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'image/*';
-      input.onchange = function(){
-        const file = input.files && input.files[0];
-        if (!file) return;
-        putCustom(slot, file).then(function(){ return loadCustom(slot); }).then(function(){ renderGal(); });
-      };
-      input.click();
-    };
-
-    const clear = document.createElement('button');
-    clear.type = 'button';
-    clear.className = 'btn ghost';
-    clear.textContent = 'Quitar';
-    clear.disabled = !custom;
-    clear.onclick = function(){
-      dropCustom(slot).then(function(){
-        if (customSrc[slot]) URL.revokeObjectURL(customSrc[slot]);
-        delete customSrc[slot];
-        renderGal();
-      });
-    };
-
     meta.appendChild(title);
     meta.appendChild(sub);
     meta.appendChild(btn);
-    meta.appendChild(pick);
-    meta.appendChild(clear);
     el.appendChild(img);
     el.appendChild(meta);
     shop.appendChild(el);
