@@ -31,7 +31,7 @@ function hud() {
   document.getElementById('runGems').textContent = runGems;
   document.getElementById('lifeGems').textContent = save.gems;
   const stats = document.getElementById('stats');
-  if (stats) stats.textContent = 'SPD ' + RUN.spd + ' · DEF ' + RUN.def + ' · ATK ' + RUN.atk;
+  if (stats) stats.textContent = 'SPD ' + RUN.spd + '  DEF ' + RUN.def + '  ATK ' + RUN.atk + '  MAG ' + RUN.mag;
   document.getElementById('xp').style.width = Math.min(100, (xp / xpNeed) * 100) + '%';
   refreshItems();
   if (bannerT > 0) bannerT -= 0.016;
@@ -89,7 +89,8 @@ function offerLevel() {
   const picks = [
     { id:'spd', name:'+Speed', desc:'Más rápido al moverte y al disparar. ' + nextStatLine('spd') },
     { id:'def', name:'+Def', desc:'Menos daño recibido. ' + nextStatLine('def') },
-    { id:'atk', name:'+Atk', desc:'Más daño a enemigos. ' + nextStatLine('atk') }
+    { id:'atk', name:'+Atk', desc:'Más daño a enemigos. ' + nextStatLine('atk') },
+    { id:'mag', name:'+Mag', desc:'Más radio para juntar gemas. ' + nextStatLine('mag') }
   ];
   const box = document.getElementById('picks');
   box.innerHTML = '';
@@ -226,6 +227,7 @@ function dropFace(g) {
   if (g.kind === 'heal') return '💖';
   if (g.kind === 'bomb') return '💣';
   if (g.kind === 'magnet') return '🧲';
+  if (g.special || g.kind === 'fan') return specialFace(g.kind);
   return '💎';
 }
 

@@ -12,7 +12,7 @@ var WAVE_PHASES = {
 };
 
 function resetWaves() {
-  WAVE_DIR = { id:'normal', smooth:0.42, target:0.42, left:20, label:'Normal' };
+  WAVE_DIR = { id:'normal', smooth:0.42, target:0.42, left:20, label:'Normal', base:0 };
 }
 
 function pickWave() {
@@ -37,11 +37,22 @@ function tickWaves(dt) {
   WAVE_DIR.smooth += (WAVE_DIR.target - WAVE_DIR.smooth) * k;
 }
 
+function afterBossWaves() {
+  if (!WAVE_DIR) resetWaves();
+  WAVE_DIR.base = Math.min(0.22, (WAVE_DIR.base || 0) + 0.06);
+  WAVE_DIR.id = 'normal';
+  WAVE_DIR.target = WAVE_PHASES.normal.t;
+  WAVE_DIR.smooth = Math.max(WAVE_DIR.smooth, 0.38);
+  WAVE_DIR.left = 18;
+  WAVE_DIR.label = 'Normal';
+}
+
 function waveSpawn() {
-  const heat = bossLive ? Math.min(WAVE_DIR.smooth, 0.4) : WAVE_DIR.smooth;
-  const pressure = Math.min(1, (aliveTime || 0) / 480) + (bossesDown || 0) * 0.1;
-  const every = Math.max(0.2, (1.18 - pressure * 0.28 - (bossesDown || 0) * 0.06) / (0.55 + heat * 1.45));
-  const cap = Math.min(42, Math.round(5 + pressure * 7 + (bossesDown || 0) * 3 + heat * 11));
+  const base = WAVE_DIR.base || 0;
+  const heat = bossLive ? Math.min(WAVE_DIR.smooth, 0.4) : Math.min(1, WAVE_DIR.smooth + base);
+  const pressure = Math.min(1, (aliveTime || 0) / 480) + (bossesDown || 0) * 0.08;
+  const every = Math.max(0.2, (1.18 - pressure * 0.22 - base * 0.35) / (0.55 + heat * 1.45));
+  const cap = Math.min(42, Math.round(5 + pressure * 6 + base * 8 + heat * 11));
   return { every:every, cap:cap, heat:WAVE_DIR.smooth, label:WAVE_DIR.label };
 }
 

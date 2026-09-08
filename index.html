@@ -12,7 +12,6 @@
   <div id="hud" class="hidden">
     <div class="card"><span id="time" class="cyan">0:00</span></div>
     <div class="card">HP <span id="hp" class="hp">150</span></div>
-    <div class="card" id="stats">SPD 0 · DEF 0 · ATK 0</div>
     <div class="card">💎 <span id="runGems" class="mag">0</span> · <span id="lifeGems" class="mag">0</span></div>
   </div>
   <div id="banner" class="hidden"></div>
@@ -80,10 +79,13 @@
 </div>
 <div id="pad" class="hidden">
   <div id="stick"><div id="knob"></div></div>
-  <div class="items">
-    <button id="useHeal" type="button">❤ <span id="healN">0</span></button>
-    <button id="useBomb" type="button">💣 <span id="bombN">0</span></button>
-    <label class="auto" id="autoItem"><input type="checkbox" id="autoCheck"> Auto</label>
+  <div class="side">
+    <div class="items">
+      <button id="useHeal" type="button">❤ <span id="healN">0</span></button>
+      <button id="useBomb" type="button">💣 <span id="bombN">0</span></button>
+      <label class="auto" id="autoItem"><input type="checkbox" id="autoCheck"> Auto</label>
+    </div>
+    <div id="stats">SPD 0  DEF 0  ATK 0  MAG 0</div>
   </div>
 </div>
 <script src="js/data.js"></script>

@@ -83,5 +83,9 @@ function collectPickup(g) {
     pullGems();
     return;
   }
+  if (g.special) {
+    takeSpecial(kind);
+    return;
+  }
   collectGem(g);
 }

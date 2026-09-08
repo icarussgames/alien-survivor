@@ -37,7 +37,8 @@ function spawnEnemy() {
   if (roll < 0.272) kind = 'shooter';
   else if (roll < 0.552) kind = 'whip';
   const mult = kind === 'whip' ? 1.2 : (kind === 'shooter' ? 1.8 : 1.6);
-  const bars = 1 + bossesDown;
+  const extra = Math.min(0.62, Math.max(0, (lvl|0) - 1) * 0.045 + bossesDown * 0.02);
+  const bars = 1 + (Math.random() < extra ? 1 : 0);
   const hp = mult * sc.hp * bars;
   const spd = (kind === 'whip' ? 96 : (kind === 'shooter' ? 44 : 34)) * sc.spd;
   enemies.push({
@@ -57,7 +58,7 @@ function spawnBoss() {
     x: W / 2, y: -30, r: 28, hp:hp, max:hp, bars: 1 + bossesDown,
     spd: 34 * sc.spd, kind: 'boss', shoot: 0.8, dmg: 1.4 * sc.dmg, big: true,
     flash:0, whip:0, tell:0, tellColor:'#fff',
-    kit: first, move: 'shot', phase: 'cool'
+    kit: first, move: 'shot', phase: 'cool', reward: bossesDown
   });
   bossLive = true;
   banner(first ? 'JEFE · disparo y látigo' : 'JEFE');
@@ -142,9 +143,13 @@ function hitEnemy(e, dmg) {
     bossLive = false;
     bossesDown += 1;
     unlock('acech');
-    banner('Oleada más densa · +1 barra');
-    for (let i = 0; i < 6; i++) gems.push({ kind:'gem', x:e.x + (Math.random()-0.5)*20, y:e.y, v:1, r:7 });
-    if (Math.random() < 0.35) gems.push(rollDrop(e.x, e.y));
+    const reward = bossReward(e.reward|0);
+    if (reward && !ownsSpecial(reward.kind)) {
+      gems.push({ kind:reward.kind, special:true, x:e.x, y:e.y, v:0, r:10 });
+    }
+    afterBossWaves();
+    banner(reward ? reward.label : 'Oleadas');
+    for (let i = 0; i < 4; i++) gems.push({ kind:'gem', x:e.x + (Math.random()-0.5)*24, y:e.y, v:1, r:7 });
   } else if (Math.random() < 0.88) {
     gems.push(rollDrop(e.x, e.y));
   }
