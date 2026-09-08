@@ -134,7 +134,6 @@ const CHARS = [
   { id:'char_2', level:2, base:'assets/char2_base.jpg', s1:{outfit:'assets/char2_t1.jpg', pose:'assets/char2_p1.jpg'}, s2:{outfit:'assets/char2_t2.jpg', pose:'assets/char2_p2.jpg'} },
   { id:'char_3', level:3, base:'assets/char3_base.jpg', s1:{outfit:'assets/char3_t1.jpg', pose:'assets/char3_p1.jpg'}, s2:{outfit:'assets/char3_t2.jpg', pose:'assets/char3_p2.jpg'} }
 ];
-const RESTRICTED = new Set(['char_1_s2_pose','char_2_s1_pose','char_2_s2_pose','char_3_s1_outfit','char_3_s1_pose','char_3_s2_outfit','char_3_s2_pose']);
 const PHOTO_AT = [25, 90, 220];
 const TOKENS = [
   { at:25, cost:12 },
@@ -716,34 +715,27 @@ function openLib() {
     ['s2_outfit', char.s2.outfit, true],
     ['s2_pose', char.s2.pose, cosmOn(char.id+'_s2_outfit')]
   ];
+  const costs = { s1_outfit:12, s1_pose:16, s2_outfit:22, s2_pose:28 };
   items.forEach(function(it){
     const key = char.id+'_'+it[0];
     const on = cosmOn(key);
-    const restricted = RESTRICTED.has(key);
-    const token = nextToken();
-    const tokenOpen = !!(token && save.life >= token.at);
+    const cost = costs[it[0]];
     const box = document.createElement('div');
     box.className = 'cosm';
     const im = document.createElement('img');
     im.src = it[1];
     im.style.filter = on ? 'blur(0px)' : 'blur(35px)';
-    im.onclick = function(){
-      if (on) showFs(it[1]);
-      else if (restricted) alert('Bloqueado en la demo.');
-    };
+    im.onclick = function(){ if (on) showFs(it[1]); };
     const b = document.createElement('button');
     if (on) { b.textContent = 'Comprado'; b.style.background = '#16a34a'; b.disabled = true; }
-    else if (restricted) { b.textContent = 'Demo'; b.style.background = '#d97706'; b.onclick = function(){ alert('Bloqueado en la demo.'); }; }
     else if (!it[2]) { b.textContent = 'Falta el outfit'; b.style.background = '#334155'; b.disabled = true; }
-    else if (!tokenOpen) { b.textContent = 'Ticket bloqueado'; b.style.background = '#334155'; b.disabled = true; }
     else {
-      b.textContent = 'Comprar 💎'+token.cost;
+      b.textContent = 'Comprar 💎'+cost;
       b.className = 'buy';
       b.style.background = '#2563eb';
       b.onclick = function(){
-        if (save.gems < token.cost) { alert('Te faltan '+(token.cost-save.gems)+' gemas.'); return; }
-        save.gems -= token.cost;
-        save.bought = (save.bought|0) + 1;
+        if (save.gems < cost) { alert('Te faltan '+(cost-save.gems)+' gemas.'); return; }
+        save.gems -= cost;
         save.cosm[key] = true;
         persist();
         openLib();
