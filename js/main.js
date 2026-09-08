@@ -87,7 +87,7 @@ function offerLevel() {
   const mods = player.mods;
   const pool = [
     { id:'mag', name:'Atracción', desc:'Imán de gemas esta partida' },
-    { id:'heal', name:'Cura', desc:'Recupera 2 de vida' }
+    { id:'heal', name:'Cura', desc:'Recupera 30 de vida' }
   ];
   if ((mods.dmg||0) + owned('dano') < dmgCap()) {
     pool.unshift({ id:'dmg', name:'Filo', desc:'Daño '+((mods.dmg||0)+1)+' / techo '+dmgCap() });
@@ -119,7 +119,7 @@ function applyPick(id) {
   if (id === 'rate') player.mods.rate = Math.min(rateCap(), (player.mods.rate||0) + 1);
   if (id === 'spread') player.mods.spread = Math.min(2, (player.mods.spread||0) + 1);
   if (id === 'mag') player.mods.mag += 28;
-  if (id === 'heal') player.hp = Math.min(player.maxHp, player.hp + 2);
+  if (id === 'heal') player.hp = Math.min(player.maxHp, player.hp + 30);
   setScreen('play');
 }
 
@@ -260,7 +260,7 @@ function draw() {
   enemies.forEach(function(e){
     if (e.kind === 'whip' && e.whip > 0) {
       const a = Math.atan2(player.y - e.y, player.x - e.x);
-      const reach = 72;
+      const reach = 58;
       ctx.strokeStyle = '#ffd166';
       ctx.lineWidth = 4;
       ctx.beginPath();

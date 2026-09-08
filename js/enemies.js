@@ -23,11 +23,11 @@ function spawnEnemy() {
   const roll = Math.random();
   const hit = basicHit();
   let kind = 'normal';
-  if (roll < 0.34) kind = 'shooter';
-  else if (roll < 0.62) kind = 'whip';
+  if (roll < 0.272) kind = 'shooter';
+  else if (roll < 0.552) kind = 'whip';
   const mult = kind === 'whip' ? 1.2 : (kind === 'shooter' ? 1.8 : 1.6);
   const hp = mult * hit * sc.hp;
-  const spd = (kind === 'whip' ? 96 : (kind === 'shooter' ? 44 : 52)) * sc.spd;
+  const spd = (kind === 'whip' ? 96 : (kind === 'shooter' ? 44 : 34)) * sc.spd;
   enemies.push({
     x:x, y:y,
     r: kind === 'whip' ? 10 : (kind === 'shooter' ? 13 : 12),
@@ -83,7 +83,7 @@ function updateEnemies(dt) {
     let want = e.spd;
     if (e.kind === 'shooter' && dist < 170) want = dist < 120 ? -e.spd * 0.4 : 0;
     if (e.kind === 'boss' && dist < 140) want = 0;
-    if (e.kind === 'whip' && dist < 62) want = 0;
+    if (e.kind === 'whip' && dist < 50) want = 0;
     e.x += (dx / dist) * want * dt;
     e.y += (dy / dist) * want * dt;
     e.shoot -= dt;
@@ -97,12 +97,12 @@ function updateEnemies(dt) {
       e.shoot = 1.15;
       enemyFire(e, 3);
     }
-    if (e.kind === 'whip' && dist < 78 && e.shoot <= 0) {
+    if (e.kind === 'whip' && dist < 64 && e.shoot <= 0) {
       e.shoot = 0.85;
       e.whip = 0.16;
-      hurt(1);
+      hurt(20);
     }
-    if (e.kind !== 'whip' && Math.hypot(e.x - player.x, e.y - player.y) < e.r + player.r - 2) hurt(e.kind === 'boss' ? 2 : 1);
+    if (e.kind !== 'whip' && Math.hypot(e.x - player.x, e.y - player.y) < e.r + player.r - 2) hurt(e.kind === 'boss' ? 20 : 10);
   });
 
   enemyShots.forEach(function(s){
@@ -111,7 +111,7 @@ function updateEnemies(dt) {
     s.life -= dt;
     if (Math.hypot(s.x - player.x, s.y - player.y) < s.r + player.r - 2) {
       s.life = 0;
-      hurt(1);
+      hurt(10);
     }
   });
   enemyShots = enemyShots.filter(function(s){
@@ -145,11 +145,12 @@ function rollDrop(x, y) {
 }
 
 function boom(x, y) {
+  const boomDmg = Math.max(1, dmgNow() * 1.5);
   enemies.slice().forEach(function(en){
-    if (Math.hypot(en.x - x, en.y - y) < 100) hitEnemy(en, 8);
+    if (Math.hypot(en.x - x, en.y - y) < 260) hitEnemy(en, boomDmg);
   });
   for (let i = 0; i < 16; i++) {
-    particles.push({ x:x, y:y, vx:(Math.random()-0.5)*180, vy:(Math.random()-0.5)*180, life:0.45, c:'#ff8844', s:5 });
+    particles.push({ x:x, y:y, vx:(Math.random()-0.5)*320, vy:(Math.random()-0.5)*320, life:0.55, c:'#ff8844', s:6 });
   }
   beep(90, 0.18, 'sawtooth', 0.07);
 }

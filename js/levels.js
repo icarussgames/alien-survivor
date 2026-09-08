@@ -5,7 +5,7 @@ function tier() { return Math.floor((aliveTime || 0) / WAVE); }
 function rateCap() { return 2 + tier(); }
 function dmgCap() { return 3 + tier() * 2; }
 
-function maxHp() { return 7 + (owned('vida') ? 2 : 0); }
+function maxHp() { return 100 + (owned('vida') ? 20 : 0); }
 function moveSpeed() { return owned('botas') ? 190 : 145; }
 function magnet() { return owned('iman') ? 78 : 26; }
 
