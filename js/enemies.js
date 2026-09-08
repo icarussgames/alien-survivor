@@ -5,6 +5,7 @@ var enemyShots = [];
 var bossLive = false;
 var lastBossTier = -1;
 var boomRings = [];
+var bossesDown = 0;
 var WHIP_REACH = 64;
 
 function resetEnemies() {
@@ -13,6 +14,14 @@ function resetEnemies() {
   bossLive = false;
   lastBossTier = -1;
   boomRings = [];
+  bossesDown = 0;
+}
+
+function enemyFace(e) {
+  if (e.kind === 'boss') return '👿';
+  if (e.kind === 'shooter') return '🛸';
+  if (e.kind === 'whip') return '🦂';
+  return '👽';
 }
 
 function spawnEnemy() {
@@ -28,26 +37,30 @@ function spawnEnemy() {
   if (roll < 0.272) kind = 'shooter';
   else if (roll < 0.552) kind = 'whip';
   const mult = kind === 'whip' ? 1.2 : (kind === 'shooter' ? 1.8 : 1.6);
-  const hp = mult * sc.hp;
+  const bars = 1 + bossesDown;
+  const hp = mult * sc.hp * bars;
   const spd = (kind === 'whip' ? 96 : (kind === 'shooter' ? 44 : 34)) * sc.spd;
   enemies.push({
     x:x, y:y,
-    r: kind === 'whip' ? 10 : (kind === 'shooter' ? 13 : 12),
-    hp:hp, max:hp, spd:spd, kind:kind,
-    shoot: 0.45 + Math.random() * 0.4, dmg: sc.dmg, flash:0, whip:0
+    r: kind === 'whip' ? 12 : (kind === 'shooter' ? 14 : 13),
+    hp:hp, max:hp, bars:bars, spd:spd, kind:kind,
+    shoot: 0.45 + Math.random() * 0.4, dmg: sc.dmg, flash:0, whip:0, tell:0, tellColor:'#fff'
   });
 }
 
 function spawnBoss() {
   if (bossLive) return;
   const sc = enemyScale();
-  const hp = Math.round(26 * sc.hp);
+  const first = bossesDown === 0;
+  const hp = Math.round((first ? 54 : 32) * sc.hp * (1 + bossesDown * 0.45));
   enemies.push({
-    x: W / 2, y: -30, r: 28, hp:hp, max:hp,
-    spd: 36 * sc.spd, kind: 'boss', shoot: 0.6, dmg: 1.4 * sc.dmg, big: true
+    x: W / 2, y: -30, r: 28, hp:hp, max:hp, bars: 1 + bossesDown,
+    spd: 34 * sc.spd, kind: 'boss', shoot: 0.8, dmg: 1.4 * sc.dmg, big: true,
+    flash:0, whip:0, tell:0, tellColor:'#fff',
+    kit: first, move: 'shot', phase: 'cool'
   });
   bossLive = true;
-  banner('JEFE');
+  banner(first ? 'JEFE · látigo y bomba' : 'JEFE');
   beep(90, 0.28, 'sawtooth', 0.07);
 }
 
@@ -95,10 +108,7 @@ function updateEnemies(dt) {
       e.shoot = 1.55;
       enemyFire(e, 1);
     }
-    if (e.kind === 'boss' && e.shoot <= 0) {
-      e.shoot = 1.15;
-      enemyFire(e, 3);
-    }
+    if (e.kind === 'boss') bossAct(e, dist);
     if (e.kind === 'whip' && dist < WHIP_REACH && e.shoot <= 0) {
       e.shoot = 0.85;
       e.whip = 0.16;
@@ -130,13 +140,48 @@ function hitEnemy(e, dmg) {
   unlock('alien');
   if (e.kind === 'boss') {
     bossLive = false;
+    bossesDown += 1;
     unlock('acech');
+    banner('Oleada más densa · +1 barra');
     for (let i = 0; i < 6; i++) gems.push({ kind:'gem', x:e.x + (Math.random()-0.5)*20, y:e.y, v:1, r:7 });
     if (Math.random() < 0.35) gems.push(rollDrop(e.x, e.y));
   } else if (Math.random() < 0.88) {
     gems.push(rollDrop(e.x, e.y));
   }
   enemies.splice(enemies.indexOf(e), 1);
+}
+
+
+function bossAct(e, dist) {
+  if (e.phase === 'tell') {
+    e.tell = 0.7;
+    if (e.shoot > 0) return;
+    if (e.move === 'shot') enemyFire(e, 3);
+    if (e.move === 'whip') {
+      e.whip = 0.18;
+      if (dist < WHIP_REACH + 16) hurt(20);
+    }
+    if (e.move === 'bomb') bossBlast(e.x, e.y);
+    e.phase = 'cool';
+    e.shoot = 1.15;
+    e.tell = 0;
+    if (e.kit) e.move = e.move === 'shot' ? 'whip' : (e.move === 'whip' ? 'bomb' : 'shot');
+    return;
+  }
+  e.tell = 0;
+  if (e.shoot > 0) return;
+  e.phase = 'tell';
+  e.shoot = 0.7;
+  e.tell = 0.7;
+  if (!e.kit) e.move = 'shot';
+  e.tellColor = e.move === 'whip' ? '#ff9f43' : (e.move === 'bomb' ? '#ffe14a' : '#7af7ff');
+}
+
+function bossBlast(x, y) {
+  const reach = 150;
+  boomRings.push({ x:x, y:y, reach:reach, life:0.42, max:0.42 });
+  if (player && Math.hypot(player.x - x, player.y - y) < reach) hurt(30);
+  beep(70, 0.2, 'sawtooth', 0.07);
 }
 
 function rollDrop(x, y) {

@@ -151,8 +151,8 @@ function update(dt) {
   if (bannerT > 0) bannerT -= dt;
 
   spawnT -= dt;
-  const cap = Math.min(28, 6 + Math.floor(aliveTime / 18));
-  const every = Math.max(0.34, 1.2 - aliveTime * 0.0016);
+  const cap = Math.min(40, 6 + Math.floor(aliveTime / 18) + bossesDown * 4);
+  const every = Math.max(0.22, 1.2 - aliveTime * 0.0016 - bossesDown * 0.14);
   if (spawnT <= 0 && enemies.length < cap) {
     spawnEnemy();
     spawnT = every;
@@ -268,9 +268,9 @@ function draw() {
   if (!player) return;
   gems.forEach(drawDrop);
   enemies.forEach(function(e){
-    if (e.kind === 'whip' && e.whip > 0) {
+    if ((e.kind === 'whip' || e.kind === 'boss') && e.whip > 0) {
       const a = Math.atan2(player.y - e.y, player.x - e.x);
-      const reach = 58;
+      const reach = e.kind === 'boss' ? 78 : 58;
       ctx.strokeStyle = '#ffd166';
       ctx.lineWidth = 4;
       ctx.beginPath();
@@ -283,20 +283,37 @@ function draw() {
       );
       ctx.stroke();
     }
-    ctx.fillStyle = e.kind === 'boss' ? '#ffcc66' : (e.kind === 'shooter' ? '#66ffd1' : (e.kind === 'whip' ? '#ff9f43' : '#39ff14'));
-    ctx.beginPath();
-    ctx.ellipse(e.x, e.y, e.r, e.r * (e.kind === 'boss' ? 0.9 : 0.86), 0, 0, Math.PI*2);
-    ctx.fill();
-    if (e.flash > 0) {
-      ctx.fillStyle = 'rgba(255,255,255,.75)';
+    if (e.tell > 0) {
+      ctx.fillStyle = e.tellColor || '#fff';
+      ctx.globalAlpha = 0.45 + 0.35 * Math.sin(e.tell * 18);
       ctx.beginPath();
-      ctx.ellipse(e.x, e.y, e.r, e.r * 0.86, 0, 0, Math.PI*2);
+      ctx.arc(e.x, e.y, e.r + 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    ctx.font = (e.kind === 'boss' ? 46 : 26) + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(enemyFace(e), e.x, e.y + 1);
+    if (e.flash > 0) {
+      ctx.fillStyle = 'rgba(255,255,255,.55)';
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, e.r * 0.7, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.fillStyle = 'rgba(0,0,0,.35)';
-    ctx.fillRect(e.x - e.r, e.y - e.r - 6, e.r*2, 3);
-    ctx.fillStyle = e.kind === 'boss' ? '#ffcc66' : '#ff3366';
-    ctx.fillRect(e.x - e.r, e.y - e.r - 6, e.r*2 * (e.hp / e.max), 3);
+    const bars = Math.max(1, e.bars || 1);
+    const gap = 2;
+    const w = Math.max(10, e.r * 2);
+    const seg = (w - gap * (bars - 1)) / bars;
+    const per = e.max / bars;
+    for (let i = 0; i < bars; i++) {
+      const x = e.x - w / 2 + i * (seg + gap);
+      const left = e.hp - per * i;
+      ctx.fillStyle = 'rgba(0,0,0,.4)';
+      ctx.fillRect(x, e.y - e.r - 10, seg, 4);
+      ctx.fillStyle = e.kind === 'boss' ? '#ffcc66' : '#ff3366';
+      ctx.fillRect(x, e.y - e.r - 10, seg * Math.max(0, Math.min(1, left / per)), 4);
+    }
   });
   enemyShots.forEach(function(s){
     ctx.fillStyle = '#ff4466';
