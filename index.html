@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Alien Survivor</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; user-select:none; -webkit-user-select:none; -webkit-tap-highlight-color:transparent; touch-action:none; }
+  body { background:#02020a; color:#fff; font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif; min-height:100vh; display:flex; align-items:center; justify-content:center; }
+  #wrap { position:relative; width:min(94vw,94vh); height:min(94vw,94vh); max-width:600px; max-height:600px; aspect-ratio:1/1; border:2px solid rgba(0,255,255,.35); border-radius:16px; overflow:hidden; background:#050518; box-shadow:0 0 35px rgba(0,255,255,.2); }
+  canvas { width:100%; height:100%; display:block; }
+  #hud { position:absolute; top:10px; left:10px; right:10px; display:flex; justify-content:space-between; gap:6px; pointer-events:none; z-index:5; }
+  .card { background:rgba(10,15,35,.85); border:1px solid rgba(0,255,255,.4); border-radius:8px; padding:6px 10px; font-size:.82rem; font-weight:700; white-space:nowrap; }
+  .cyan { color:#00ffff; } .mag { color:#ff00ff; } .hp { color:#ff6688; }
+  #bar { position:absolute; left:12px; right:12px; bottom:12px; height:8px; border-radius:99px; background:rgba(255,255,255,.08); overflow:hidden; z-index:5; pointer-events:none; }
+  #bar > i { display:block; height:100%; width:0%; background:linear-gradient(90deg,#39ff14,#00ffff); }
+  .overlay { position:absolute; inset:0; background:rgba(3,3,15,.92); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:20; padding:16px; text-align:center; backdrop-filter:blur(6px); }
+  .hidden { display:none !important; }
+  h1 { font-size:1.7rem; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px; background:linear-gradient(45deg,#00ffff,#39ff14,#ff00ff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  p { color:#9499c7; font-size:.92rem; line-height:1.4; max-width:340px; margin-bottom:14px; }
+  .btn { background:linear-gradient(45deg,#00f2fe,#4facfe); border:0; color:#fff; font-weight:800; border-radius:25px; padding:11px 26px; font-size:1rem; cursor:pointer; margin:4px; }
+  .btn:active { transform:scale(.96); }
+  .btn.ghost { background:transparent; border:1px solid rgba(0,255,255,.45); }
+  .tips { margin-top:10px; color:#6a7199; font-size:.78rem; }
+  .scroll { width:100%; max-height:70%; overflow:auto; display:flex; flex-direction:column; gap:8px; padding:4px; }
+  .row { width:100%; text-align:left; background:rgba(15,20,40,.9); border:1px solid rgba(0,255,255,.25); border-radius:12px; padding:10px 12px; display:flex; gap:10px; align-items:center; }
+  .row b { display:block; font-size:.95rem; }
+  .row span { color:#9499c7; font-size:.78rem; }
+  .row button { margin-left:auto; flex:none; }
+  .row.lock { opacity:.45; }
+  .grid { width:100%; max-height:70%; overflow:auto; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .gcard { background:#0b1024; border:1px solid rgba(255,0,255,.3); border-radius:12px; min-height:108px; padding:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
+  .gcard .ico { font-size:1.8rem; filter:none; }
+  .gcard.lock .ico { filter:blur(6px) grayscale(1); }
+  .gcard small { color:#8b90b8; font-size:.72rem; text-align:center; }
+  .pick { width:100%; max-width:320px; background:#10162e; border:1px solid rgba(0,255,255,.35); color:#fff; border-radius:12px; padding:12px; margin:6px 0; cursor:pointer; text-align:left; }
+  .pick:active { transform:scale(.98); }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c" width="600" height="600"></canvas>
+  <div id="hud" class="hidden">
+    <div class="card"><span id="time" class="cyan">0:00</span></div>
+    <div class="card">HP <span id="hp" class="hp">5</span></div>
+    <div class="card">💎 <span id="runGems" class="mag">0</span> · <span id="lifeGems" class="mag">0</span></div>
+  </div>
+  <div id="bar" class="hidden"><i id="xp"></i></div>
+
+  <div id="menu" class="overlay">
+    <h1>Alien Survivor</h1>
+    <p>Quédate en la arena. El disparo es automático. Arrastra o usa WASD para moverte. Las gemas se guardan y abren mejoras y la galería.</p>
+    <button class="btn" id="startBtn">EMPEZAR</button>
+    <div>
+      <button class="btn ghost" id="shopBtn">MEJORAS</button>
+      <button class="btn ghost" id="galBtn">GALERÍA</button>
+    </div>
+    <div class="tips">Arrastra en la arena, o WASD / flechas</div>
+  </div>
+
+  <div id="over" class="overlay hidden">
+    <h1 style="-webkit-text-fill-color:#ff3366;color:#ff3366">Caíste</h1>
+    <p>Tiempo: <b id="fTime" class="cyan">0:00</b><br>Gemas de la partida: <span id="fRun" class="mag">0</span><br>Gemas totales: <span id="fLife" class="mag">0</span></p>
+    <button class="btn" id="retryBtn">REINTENTAR</button>
+    <div>
+      <button class="btn ghost" id="shopBtn2">MEJORAS</button>
+      <button class="btn ghost" id="galBtn2">GALERÍA</button>
+    </div>
+  </div>
+
+  <div id="level" class="overlay hidden">
+    <h1>Nivel</h1>
+    <p>Elige una mejora para esta partida.</p>
+    <div id="picks"></div>
+  </div>
+
+  <div id="shop" class="overlay hidden">
+    <h1>Mejoras</h1>
+    <p>Gemas: <span id="shopGems" class="mag">0</span></p>
+    <div class="scroll" id="shopList"></div>
+    <button class="btn ghost" id="shopBack">VOLVER</button>
+    <button class="btn ghost" id="wipe" style="font-size:.8rem;padding:6px 14px">Borrar progreso</button>
+  </div>
+
+  <div id="gal" class="overlay hidden">
+    <h1>Galería</h1>
+    <p>Las cartas se revelan al jugar y al comprar mejoras.</p>
+    <div class="grid" id="galGrid"></div>
+    <button class="btn ghost" id="galBack">VOLVER</button>
+  </div>
+</div>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = 600, H = 600;
+const LS = 'as_v1';
+
+const TREE = [
+  { id:'dano', name:'Daño+', desc:'+1 daño. Hasta 5.', cost:15, max:5, icon:'💥' },
+  { id:'iman', name:'Imán', desc:'Atrae gemas de más lejos.', cost:20, max:1, icon:'🧲' },
+  { id:'botas', name:'Botas', desc:'Te mueves más rápido.', cost:25, max:1, icon:'👟' },
+  { id:'vida', name:'Vitalidad', desc:'+2 de vida máxima.', cost:30, max:1, icon:'❤️' },
+  { id:'orbe', name:'Orbe', desc:'Dos orbes orbitan y golpean.', cost:40, max:1, icon:'🟣' },
+  { id:'cono', name:'Cono', desc:'Ráfaga corta al más cercano.', cost:55, max:1, icon:'🔶' },
+  { id:'piel', name:'Piel neón', desc:'Skin equipable.', cost:40, max:1, icon:'🌈' }
+];
+
+const CARDS = [
+  { id:'surv', name:'Superviviente', desc:'El que aguanta la oleada.', icon:'🧑‍🚀', equip:true },
+  { id:'shot', name:'Disparo', desc:'Rayo automático.', icon:'💠' },
+  { id:'alien', name:'Alienígena', desc:'Sale del borde y camina hacia ti.', icon:'👽' },
+  { id:'gema', name:'Gema', desc:'Se guarda al tocarla.', icon:'💎' },
+  { id:'oleada', name:'Oleada', desc:'Aguanta 30 segundos.', icon:'🌊' },
+  { id:'orbe', name:'Orbe', desc:'Arma comprada.', icon:'🟣' },
+  { id:'cono', name:'Cono', desc:'Arma comprada.', icon:'🔶' },
+  { id:'piel', name:'Piel neón', desc:'Skin de la tienda.', icon:'🌈', equip:true },
+  { id:'acech', name:'Acechador', desc:'El grande de la oleada.', icon:'👾' }
+];
+
+let save = loadSave();
+let screen = 'menu';
+let backScreen = 'menu';
+let audioCtx = null;
+let keys = {};
+let pointer = { down:false, x:300, y:300 };
+let stars = [];
+let player, enemies, gems, shots, particles, orbs, t = 0, spawnT = 0, last = 0;
+let runGems = 0, xp = 0, lvl = 1, xpNeed = 4, aliveTime = 0;
+let raf = 0;
+
+for (let i = 0; i < 50; i++) stars.push({ x:Math.random()*W, y:Math.random()*H, s:Math.random()*1.8+0.4, v:Math.random()*12+6 });
+
+function loadSave() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(LS) || '{}');
+    return {
+      gems: raw.gems|0,
+      up: raw.up || {},
+      gal: raw.gal || ['surv','shot'],
+      skin: raw.skin || 'surv'
+    };
+  } catch (e) {
+    return { gems:0, up:{}, gal:['surv','shot'], skin:'surv' };
+  }
+}
+function persist() { localStorage.setItem(LS, JSON.stringify(save)); }
+function owned(id) { return save.up[id]|0; }
+function hasCard(id) { return save.gal.indexOf(id) >= 0; }
+function unlock(id) {
+  if (hasCard(id)) return;
+  save.gal.push(id);
+  persist();
+}
+function maxHp() { return 5 + (owned('vida') ? 2 : 0); }
+function moveSpeed() { return owned('botas') ? 190 : 145; }
+function magnet() { return owned('iman') ? 78 : 26; }
+function shotDmg() { return 1 + owned('dano'); }
+function nextIndex() {
+  for (let i = 0; i < TREE.length; i++) {
+    if (owned(TREE[i].id) < TREE[i].max) return i;
+  }
+  return TREE.length;
+}
+function price(u) {
+  if (u.id === 'dano') return u.cost + owned('dano') * 8;
+  return u.cost;
+}
+
+function initAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+function beep(freq, dur, type, vol) {
+  if (!audioCtx) return;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type || 'square';
+  o.frequency.setValueAtTime(freq, audioCtx.currentTime);
+  g.gain.setValueAtTime(vol || 0.05, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(); o.stop(audioCtx.currentTime + dur);
+}
+
+function fmt(sec) {
+  sec = Math.max(0, Math.floor(sec));
+  const m = Math.floor(sec/60), s = sec%60;
+  return m + ':' + (s<10?'0':'') + s;
+}
+function show(id) {
+  ['menu','over','level','shop','gal','hud','bar'].forEach(function(n){
+    document.getElementById(n).classList.toggle('hidden', n !== id && !(id==='play' && (n==='hud'||n==='bar')));
+  });
+  if (id === 'play') {
+    document.getElementById('hud').classList.remove('hidden');
+    document.getElementById('bar').classList.remove('hidden');
+  }
+}
+function setScreen(name) {
+  screen = name;
+  if (name === 'play') show('play');
+  else show(name);
+}
+
+function startRun() {
+  initAudio();
+  player = { x:300, y:300, r:14, hp:maxHp(), maxHp:maxHp(), ang:0, ifr:0, shoot:0.2, cone:0.4 };
+  enemies = []; gems = []; shots = []; particles = []; orbs = [];
+  if (owned('orbe')) {
+    orbs.push({ a:0 }, { a:Math.PI });
+    unlock('orbe');
+  }
+  if (owned('cono')) unlock('cono');
+  if (owned('piel')) unlock('piel');
+  t = 0; spawnT = 0.4; last = 0; runGems = 0; xp = 0; lvl = 1; xpNeed = 4; aliveTime = 0;
+  setScreen('play');
+  hud();
+  if (!raf) raf = requestAnimationFrame(loop);
+}
+
+function hud() {
+  document.getElementById('time').textContent = fmt(aliveTime);
+  document.getElementById('hp').textContent = Math.max(0, Math.ceil(player ? player.hp : 0));
+  document.getElementById('runGems').textContent = runGems;
+  document.getElementById('lifeGems').textContent = save.gems;
+  document.getElementById('xp').style.width = Math.min(100, (xp/xpNeed)*100) + '%';
+}
+
+function spawnEnemy() {
+  const edge = Math.floor(Math.random()*4);
+  let x = 0, y = 0;
+  if (edge===0) { x = Math.random()*W; y = -18; }
+  if (edge===1) { x = W+18; y = Math.random()*H; }
+  if (edge===2) { x = Math.random()*W; y = H+18; }
+  if (edge===3) { x = -18; y = Math.random()*H; }
+  const big = aliveTime > 55 && Math.random() < 0.12;
+  const hp = big ? 8 : (aliveTime > 70 ? 3 : aliveTime > 35 ? 2 : 1);
+  enemies.push({ x:x, y:y, r: big?22:12+Math.random()*3, hp:hp, max:hp, big:big, spd: (big?42:58) + Math.min(50, aliveTime*0.35) });
+}
+
+function nearest() {
+  let best = null, bd = 1e9;
+  enemies.forEach(function(e){
+    const d = (e.x-player.x)**2 + (e.y-player.y)**2;
+    if (d < bd) { bd = d; best = e; }
+  });
+  return best;
+}
+
+function hurt(n) {
+  if (player.ifr > 0) return;
+  player.hp -= n;
+  player.ifr = 0.55;
+  beep(140, 0.12, 'sawtooth', 0.06);
+  if (player.hp <= 0) endRun();
+}
+
+function endRun() {
+  setScreen('over');
+  document.getElementById('fTime').textContent = fmt(aliveTime);
+  document.getElementById('fRun').textContent = runGems;
+  document.getElementById('fLife').textContent = save.gems;
+  beep(90, 0.3, 'triangle', 0.07);
+}
+
+function collect(g) {
+  runGems += g.v;
+  save.gems += g.v;
+  unlock('gema');
+  persist();
+  xp += g.v;
+  beep(720, 0.07, 'square', 0.04);
+  particles.push({ x:g.x, y:g.y, vx:0, vy:-30, life:0.4, c:'#ff00ff', s:4 });
+  if (xp >= xpNeed) {
+    xp -= xpNeed;
+    lvl += 1;
+    xpNeed = 4 + lvl * 2;
+    offerLevel();
+  }
+}
+
+function offerLevel() {
+  const pool = [
+    { id:'dmg', name:'Filo', desc:'+1 daño esta partida' },
+    { id:'rate', name:'Cadencia', desc:'Disparas más seguido' },
+    { id:'mag', name:'Atracción', desc:'Imán de gemas esta partida' },
+    { id:'heal', name:'Cura', desc:'Recupera 2 de vida' }
+  ];
+  const picks = [];
+  while (picks.length < 3 && pool.length) picks.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+  const box = document.getElementById('picks');
+  box.innerHTML = '';
+  picks.forEach(function(p){
+    const b = document.createElement('button');
+    b.className = 'pick';
+    b.innerHTML = '<b>'+p.name+'</b><br><span style="color:#9499c7">'+p.desc+'</span>';
+    b.onclick = function(){ applyPick(p.id); };
+    box.appendChild(b);
+  });
+  setScreen('level');
+  beep(540, 0.1, 'square', 0.05);
+}
+
+function applyPick(id) {
+  if (!player.mods) player.mods = { dmg:0, rate:0, mag:0 };
+  if (id==='dmg') player.mods.dmg += 1;
+  if (id==='rate') player.mods.rate += 1;
+  if (id==='mag') player.mods.mag += 28;
+  if (id==='heal') player.hp = Math.min(player.maxHp, player.hp+2);
+  setScreen('play');
+}
+
+function dmgNow() { return shotDmg() + ((player.mods && player.mods.dmg) || 0); }
+function fireRate() { return Math.max(0.18, 0.48 - ((player.mods && player.mods.rate) || 0)*0.07); }
+function magNow() { return magnet() + ((player.mods && player.mods.mag) || 0); }
+
+function shootAt(target) {
+  const a = Math.atan2(target.y-player.y, target.x-player.x);
+  shots.push({ x:player.x, y:player.y, vx:Math.cos(a)*280, vy:Math.sin(a)*280, r:4, dmg:dmgNow(), life:1.2, c:'#00ffff' });
+  unlock('shot');
+  beep(480, 0.05, 'square', 0.03);
+}
+function coneAt(target) {
+  const a = Math.atan2(target.y-player.y, target.x-player.x);
+  for (let i=-2;i<=2;i++) {
+    const aa = a + i*0.16;
+    shots.push({ x:player.x, y:player.y, vx:Math.cos(aa)*240, vy:Math.sin(aa)*240, r:3, dmg:Math.max(1, dmgNow()-1), life:0.45, c:'#ffcc66' });
+  }
+  beep(320, 0.06, 'square', 0.03);
+}
+
+function hitEnemy(e, dmg) {
+  e.hp -= dmg;
+  particles.push({ x:e.x, y:e.y, vx:(Math.random()-0.5)*40, vy:(Math.random()-0.5)*40, life:0.25, c:'#39ff14', s:3 });
+  if (e.hp <= 0) {
+    unlock('alien');
+    if (e.big) unlock('acech');
+    const drop = Math.random() < 0.82;
+    if (drop) gems.push({ x:e.x, y:e.y, v: e.big ? 3 : 1, r: e.big?9:6 });
+    enemies.splice(enemies.indexOf(e),1);
+  }
+}
+
+function update(dt) {
+  aliveTime += dt;
+  if (aliveTime >= 30) unlock('oleada');
+  if (aliveTime >= 60) unlock('acech');
+
+  spawnT -= dt;
+  const cap = Math.min(34, 8 + Math.floor(aliveTime/6));
+  const every = Math.max(0.28, 1.15 - aliveTime*0.008);
+  if (spawnT <= 0 && enemies.length < cap) {
+    spawnEnemy();
+    spawnT = every;
+  }
+
+  let mx = 0, my = 0;
+  if (keys['ArrowLeft']||keys['a']||keys['A']) mx -= 1;
+  if (keys['ArrowRight']||keys['d']||keys['D']) mx += 1;
+  if (keys['ArrowUp']||keys['w']||keys['W']) my -= 1;
+  if (keys['ArrowDown']||keys['s']||keys['S']) my += 1;
+  if (pointer.down) {
+    mx = pointer.x - player.x;
+    my = pointer.y - player.y;
+  }
+  const len = Math.hypot(mx, my);
+  if (len > 8) {
+    player.x += (mx/len) * moveSpeed() * dt;
+    player.y += (my/len) * moveSpeed() * dt;
+    player.ang = Math.atan2(my, mx);
+  }
+  player.x = Math.max(18, Math.min(W-18, player.x));
+  player.y = Math.max(18, Math.min(H-18, player.y));
+  player.ifr = Math.max(0, player.ifr - dt);
+  player.shoot -= dt;
+  player.cone -= dt;
+
+  const target = nearest();
+  if (target && player.shoot <= 0) {
+    shootAt(target);
+    player.shoot = fireRate();
+  }
+  if (owned('cono') && target && player.cone <= 0) {
+    coneAt(target);
+    player.cone = 0.9;
+  }
+
+  orbs.forEach(function(o, i){
+    o.a += dt * 2.4;
+    const rad = 36;
+    const x = player.x + Math.cos(o.a + i)*rad;
+    const y = player.y + Math.sin(o.a + i)*rad;
+    o.x = x; o.y = y;
+    enemies.slice().forEach(function(e){
+      if ((e.orbT||0) > 0) return;
+      if (Math.hypot(e.x-x, e.y-y) < e.r+8) {
+        e.orbT = 0.35;
+        hitEnemy(e, dmgNow());
+      }
+    });
+  });
+
+  shots.forEach(function(s){
+    s.x += s.vx*dt; s.y += s.vy*dt; s.life -= dt;
+  });
+  shots = shots.filter(function(s){ return s.life>0 && s.x>-20 && s.x<W+20 && s.y>-20 && s.y<H+20; });
+
+  enemies.forEach(function(e){
+    e.orbT = Math.max(0, (e.orbT||0) - dt);
+    const a = Math.atan2(player.y-e.y, player.x-e.x);
+    e.x += Math.cos(a)*e.spd*dt;
+    e.y += Math.sin(a)*e.spd*dt;
+    if (Math.hypot(e.x-player.x, e.y-player.y) < e.r+player.r-4) hurt(1);
+  });
+
+  shots.forEach(function(s){
+    enemies.slice().forEach(function(e){
+      if (s.life>0 && Math.hypot(e.x-s.x, e.y-s.y) < e.r+s.r) {
+        s.life = 0;
+        hitEnemy(e, s.dmg);
+      }
+    });
+  });
+
+  const mag = magNow();
+  gems.forEach(function(g){
+    const d = Math.hypot(g.x-player.x, g.y-player.y);
+    if (d < mag && d > 1) {
+      g.x += (player.x-g.x)/d * 160 * dt;
+      g.y += (player.y-g.y)/d * 160 * dt;
+    }
+    if (d < player.r+g.r+4) g.got = true;
+  });
+  gems.filter(function(g){ return g.got; }).forEach(collect);
+  gems = gems.filter(function(g){ return !g.got; });
+
+  particles.forEach(function(p){ p.x += p.vx*dt; p.y += p.vy*dt; p.life -= dt; });
+  particles = particles.filter(function(p){ return p.life>0; });
+  stars.forEach(function(s){ s.y += s.v*dt; if (s.y>H) s.y = 0; });
+  hud();
+}
+
+function skin() { return save.skin === 'piel' ? { a:'#ff4fd8', b:'#39ff14' } : { a:'#7af7ff', b:'#1a3a55' }; }
+
+function draw() {
+  ctx.fillStyle = '#050518';
+  ctx.fillRect(0,0,W,H);
+  stars.forEach(function(s){
+    ctx.fillStyle = 'rgba(180,220,255,.7)';
+    ctx.fillRect(s.x, s.y, s.s, s.s);
+  });
+  ctx.strokeStyle = 'rgba(0,255,255,.06)';
+  ctx.lineWidth = 1;
+  for (let i=0;i<W;i+=40) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,H); ctx.stroke(); }
+  for (let i=0;i<H;i+=40) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(W,i); ctx.stroke(); }
+
+  if (!player) return;
+
+  gems.forEach(function(g){
+    ctx.save();
+    ctx.translate(g.x, g.y);
+    ctx.fillStyle = '#ff00ff';
+    ctx.beginPath();
+    ctx.moveTo(0, -g.r-2); ctx.lineTo(g.r, 0); ctx.lineTo(0, g.r+2); ctx.lineTo(-g.r, 0);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  });
+
+  enemies.forEach(function(e){
+    ctx.fillStyle = e.big ? '#7cff6b' : '#39ff14';
+    ctx.beginPath();
+    ctx.ellipse(e.x, e.y, e.r, e.r*0.86, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#061006';
+    ctx.beginPath(); ctx.arc(e.x-4, e.y-2, 2.2, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(e.x+4, e.y-2, 2.2, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.35)';
+    ctx.fillRect(e.x-e.r, e.y-e.r-6, e.r*2, 3);
+    ctx.fillStyle = '#ff3366';
+    ctx.fillRect(e.x-e.r, e.y-e.r-6, e.r*2*(e.hp/e.max), 3);
+  });
+
+  shots.forEach(function(s){
+    ctx.fillStyle = s.c;
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
+  });
+  orbs.forEach(function(o){
+    ctx.fillStyle = '#c084fc';
+    ctx.beginPath(); ctx.arc(o.x, o.y, 7, 0, Math.PI*2); ctx.fill();
+  });
+
+  const col = skin();
+  ctx.save();
+  ctx.globalAlpha = player.ifr>0 && Math.floor(player.ifr*20)%2===0 ? 0.35 : 1;
+  ctx.translate(player.x, player.y);
+  ctx.rotate(player.ang);
+  ctx.fillStyle = col.b;
+  ctx.beginPath(); ctx.ellipse(-2, 2, 8, 11, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = col.a;
+  ctx.beginPath(); ctx.arc(6, 0, 7, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(8, -2, 6, 3);
+  ctx.restore();
+
+  particles.forEach(function(p){
+    ctx.globalAlpha = Math.max(0, p.life*2);
+    ctx.fillStyle = p.c;
+    ctx.fillRect(p.x, p.y, p.s||3, p.s||3);
+    ctx.globalAlpha = 1;
+  });
+}
+
+function loop(ts) {
+  raf = requestAnimationFrame(loop);
+  const now = ts/1000;
+  const dt = Math.min(0.033, last ? now-last : 0.016);
+  last = now;
+  if (screen === 'play' && player && player.hp > 0) update(dt);
+  draw();
+}
+
+function openShop() {
+  backScreen = screen === 'play' ? 'over' : (screen==='over'?'over':'menu');
+  if (screen === 'play') backScreen = 'over';
+  document.getElementById('shopGems').textContent = save.gems;
+  const list = document.getElementById('shopList');
+  list.innerHTML = '';
+  const ni = nextIndex();
+  TREE.forEach(function(u, i){
+    const have = owned(u.id);
+    const open = i <= ni && have < u.max;
+    const row = document.createElement('div');
+    row.className = 'row' + (open ? '' : ' lock');
+    const left = document.createElement('div');
+    left.innerHTML = '<b>'+u.icon+' '+u.name+'</b><span>'+u.desc+' · '+have+'/'+u.max+'</span>';
+    row.appendChild(left);
+    const b = document.createElement('button');
+    b.className = 'btn';
+    b.textContent = have >= u.max ? 'Listo' : (open ? price(u)+' 💎' : 'Bloq.');
+    b.disabled = !open || have >= u.max || save.gems < price(u);
+    b.onclick = function(){
+      const c = price(u);
+      if (save.gems < c || have >= u.max) return;
+      save.gems -= c;
+      save.up[u.id] = have + 1;
+      if (u.id==='orbe') unlock('orbe');
+      if (u.id==='cono') unlock('cono');
+      if (u.id==='piel') { unlock('piel'); save.skin = 'piel'; }
+      persist();
+      openShop();
+    };
+    row.appendChild(b);
+    list.appendChild(row);
+  });
+  setScreen('shop');
+}
+
+function openGal() {
+  backScreen = screen === 'over' ? 'over' : 'menu';
+  const grid = document.getElementById('galGrid');
+  grid.innerHTML = '';
+  CARDS.forEach(function(c){
+    const on = hasCard(c.id);
+    const el = document.createElement('div');
+    el.className = 'gcard' + (on ? '' : ' lock');
+    el.innerHTML = '<div class="ico">'+(on?c.icon:'█')+'</div><b>'+(on?c.name:'???')+'</b><small>'+(on?c.desc:'Aún cerrada')+'</small>';
+    if (on && c.equip) {
+      const b = document.createElement('button');
+      b.className = 'btn';
+      b.style.padding = '4px 10px';
+      b.style.fontSize = '.75rem';
+      b.textContent = save.skin===c.id ? 'Equipada' : 'Equipar';
+      b.onclick = function(ev){ ev.stopPropagation(); save.skin = c.id; persist(); openGal(); };
+      el.appendChild(b);
+    }
+    grid.appendChild(el);
+  });
+  setScreen('gal');
+}
+
+function canvasPos(ev) {
+  const r = canvas.getBoundingClientRect();
+  const src = ev.touches ? ev.touches[0] : ev;
+  return { x:(src.clientX-r.left)*(W/r.width), y:(src.clientY-r.top)*(H/r.height) };
+}
+canvas.addEventListener('pointerdown', function(ev){
+  initAudio();
+  pointer.down = true;
+  const p = canvasPos(ev);
+  pointer.x = p.x; pointer.y = p.y;
+});
+canvas.addEventListener('pointermove', function(ev){
+  if (!pointer.down) return;
+  const p = canvasPos(ev);
+  pointer.x = p.x; pointer.y = p.y;
+});
+window.addEventListener('pointerup', function(){ pointer.down = false; });
+window.addEventListener('keydown', function(ev){ keys[ev.key] = true; initAudio(); });
+window.addEventListener('keyup', function(ev){ keys[ev.key] = false; });
+
+document.getElementById('startBtn').onclick = startRun;
+document.getElementById('retryBtn').onclick = startRun;
+document.getElementById('shopBtn').onclick = openShop;
+document.getElementById('shopBtn2').onclick = openShop;
+document.getElementById('galBtn').onclick = openGal;
+document.getElementById('galBtn2').onclick = openGal;
+document.getElementById('shopBack').onclick = function(){ setScreen(backScreen==='play'?'menu':backScreen); };
+document.getElementById('galBack').onclick = function(){ setScreen(backScreen); };
+document.getElementById('wipe').onclick = function(){
+  save = { gems:0, up:{}, gal:['surv','shot'], skin:'surv' };
+  persist();
+  openShop();
+};
+
+setScreen('menu');
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

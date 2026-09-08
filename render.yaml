@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: alien-survivor
+    runtime: static
+    branch: main
+    buildCommand: echo static
+    staticPublishPath: .
