@@ -2,6 +2,43 @@
 
 function held(code) { return !!keys[code]; }
 
+var padMove = { x:0, y:0 };
+var padPrev = {};
+
+function pollGamepad() {
+  padMove = { x:0, y:0 };
+  if (!navigator.getGamepads) return;
+  const list = navigator.getGamepads();
+  let gp = null;
+  for (let i = 0; i < list.length; i++) {
+    if (list[i]) { gp = list[i]; break; }
+  }
+  if (!gp) return;
+  const pressed = function(i) {
+    return !!(gp.buttons[i] && (gp.buttons[i].pressed || gp.buttons[i].value > 0.5));
+  };
+  let x = gp.axes[0] || 0;
+  let y = gp.axes[1] || 0;
+  if (Math.hypot(x, y) < 0.22) { x = 0; y = 0; }
+  if (pressed(14)) x -= 1;
+  if (pressed(15)) x += 1;
+  if (pressed(12)) y -= 1;
+  if (pressed(13)) y += 1;
+  const len = Math.hypot(x, y);
+  if (len > 1) { x /= len; y /= len; }
+  padMove = { x:x, y:y };
+  function edge(id, on) {
+    const was = !!padPrev[id];
+    padPrev[id] = on;
+    return on && !was;
+  }
+  if (screen === 'play') {
+    // Cross / Square / L1 heal. Circle / R1 bomb. Standard map covers DualSense.
+    if (edge('heal', pressed(0) || pressed(2) || pressed(4))) useHeal();
+    if (edge('bomb', pressed(1) || pressed(5))) useBomb();
+  }
+}
+
 function moveVector() {
   let mx = 0, my = 0;
   if (held('ArrowLeft') || held('KeyA')) mx -= 1;
@@ -10,6 +47,7 @@ function moveVector() {
   if (held('ArrowDown') || held('KeyS')) my += 1;
   if (mx || my) return { x:mx, y:my };
   if (stick.on) return { x:stick.x, y:stick.y };
+  if (padMove.x || padMove.y) return padMove;
   return { x:0, y:0 };
 }
 

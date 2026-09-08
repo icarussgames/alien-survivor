@@ -369,6 +369,7 @@ function draw() {
 
 function loop(ts) {
   raf = requestAnimationFrame(loop);
+  pollGamepad();
   const now = ts / 1000;
   const dt = Math.min(0.033, lastTs ? now - lastTs : 0.016);
   lastTs = now;
