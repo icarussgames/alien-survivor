@@ -3,7 +3,7 @@
 
 function tier() { return Math.floor((aliveTime || 0) / WAVE); }
 function rateCap() { return 2 + tier(); }
-function dmgCap() { return 3 + tier() * 2; }
+function dmgCap() { return Math.max(3 + tier() * 2, basicHit()); }
 
 function maxHp() { return 100 + (owned('vida') ? 20 : 0); }
 function moveSpeed() { return owned('botas') ? 190 : 145; }
@@ -16,7 +16,7 @@ function dmgNow() {
 }
 function fireRate() {
   const r = Math.min(rateCap(), (player && player.mods && player.mods.rate) || 0);
-  return Math.max(0.22, 0.52 - r * 0.045 - tier() * 0.015);
+  return Math.max(0.16, 0.50 * Math.pow(0.72, r) - tier() * 0.012);
 }
 function spreadNow() { return (player && player.mods && player.mods.spread) || 0; }
 function magNow() { return magnet() + ((player && player.mods && player.mods.mag) || 0); }

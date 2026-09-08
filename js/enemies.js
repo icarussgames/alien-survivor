@@ -24,12 +24,11 @@ function spawnEnemy() {
   if (edge === 3) { x = -18; y = Math.random() * H; }
   const sc = enemyScale();
   const roll = Math.random();
-  const hit = basicHit();
   let kind = 'normal';
   if (roll < 0.272) kind = 'shooter';
   else if (roll < 0.552) kind = 'whip';
   const mult = kind === 'whip' ? 1.2 : (kind === 'shooter' ? 1.8 : 1.6);
-  const hp = mult * hit * sc.hp;
+  const hp = mult * sc.hp;
   const spd = (kind === 'whip' ? 96 : (kind === 'shooter' ? 44 : 34)) * sc.spd;
   enemies.push({
     x:x, y:y,
@@ -142,9 +141,9 @@ function hitEnemy(e, dmg) {
 
 function rollDrop(x, y) {
   const roll = Math.random();
-  if (roll < 0.05) return { kind:'heal', x:x, y:y, v:0, r:8 };
-  if (roll < 0.09) return { kind:'bomb', x:x, y:y, v:0, r:8 };
-  if (roll < 0.12) return { kind:'magnet', x:x, y:y, v:0, r:8 };
+  if (roll < 0.08) return { kind:'heal', x:x, y:y, v:0, r:8 };
+  if (roll < 0.14) return { kind:'bomb', x:x, y:y, v:0, r:8 };
+  if (roll < 0.18) return { kind:'magnet', x:x, y:y, v:0, r:8 };
   return { kind:'gem', x:x, y:y, v:1, r:6 };
 }
 

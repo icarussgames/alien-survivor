@@ -96,7 +96,7 @@ function offerLevel() {
     pool.splice(1, 0, { id:'spread', name:'Amplitud', desc:(mods.spread||0) === 0 ? 'Abre a 3, uno al centro' : 'Abre a 5, uno al centro' });
   }
   if ((mods.rate||0) < rateCap()) {
-    pool.splice(1, 0, { id:'rate', name:'Cadencia', desc:'Más seguido. Techo '+rateCap() });
+    pool.splice(1, 0, { id:'rate', name:'Cadencia', desc:'Dispara bastante más seguido. '+((mods.rate||0)+1)+' / '+rateCap() });
   }
   const picks = [];
   while (picks.length < 3 && pool.length) picks.push(pool.splice(Math.floor(Math.random()*pool.length), 1)[0]);
@@ -182,7 +182,7 @@ function update(dt) {
       const aa = a + i * 0.2;
       shots.push({ x:player.x, y:player.y, vx:Math.cos(aa)*230, vy:Math.sin(aa)*230, r:3, dmg:Math.max(1, dmgNow()-1), life:0.4, c:'#ffcc66' });
     }
-    player.cone = 1.05;
+    player.cone = Math.max(0.42, 1.05 - (player.mods.rate||0) * 0.1);
   }
 
   orbs.forEach(function(o, i){
