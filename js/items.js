@@ -23,6 +23,8 @@ function useHeal() {
   if (player.hp >= player.maxHp) return;
   player.heal--;
   player.hp = Math.min(player.maxHp, player.hp + 3);
+  player.healFlash = 0.28;
+  flashAt(player.x, player.y, 22, 'rgba(80,255,160,.95)');
   beep(640, 0.1, 'sine', 0.05);
   refreshItems();
 }

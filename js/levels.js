@@ -9,8 +9,9 @@ function maxHp() { return 7 + (owned('vida') ? 2 : 0); }
 function moveSpeed() { return owned('botas') ? 190 : 145; }
 function magnet() { return owned('iman') ? 78 : 26; }
 
+function basicHit() { return 1 + owned('dano'); }
 function dmgNow() {
-  const raw = 1 + owned('dano') + ((player && player.mods && player.mods.dmg) || 0);
+  const raw = basicHit() + ((player && player.mods && player.mods.dmg) || 0);
   return Math.min(dmgCap(), raw);
 }
 function fireRate() {

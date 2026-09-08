@@ -40,10 +40,15 @@ function skin() {
   return save.skin === 'piel' ? { a:'#ff4fd8', b:'#39ff14' } : { a:'#7af7ff', b:'#1a3a55' };
 }
 
+function flashAt(x, y, r, color) {
+  flashes.push({ x:x, y:y, r:r, life:0.16, color:color });
+}
 function hurt(n) {
   if (!player || player.ifr > 0) return;
   player.hp -= n;
   player.ifr = 0.6;
+  player.hitFlash = 0.2;
+  flashAt(player.x, player.y, 26, 'rgba(255,70,90,.95)');
   beep(140, 0.12, 'sawtooth', 0.06);
   if (player.hp <= 0) endRun();
 }
@@ -124,8 +129,9 @@ function startRun() {
     x:300, y:300, r:14, hp:maxHp(), maxHp:maxHp(),
     ang:0, ifr:0, shoot:0.25, cone:0.5,
     mods:{ dmg:0, rate:0, mag:0, spread:0 },
-    heal:0, bombs:0
+    heal:0, bombs:0, hitFlash:0, healFlash:0
   };
+  flashes = [];
   gems = []; shots = []; particles = []; orbs = [];
   if (owned('orbe')) orbs = [{ a:0 }, { a:Math.PI }];
   resetEnemies();
@@ -252,10 +258,31 @@ function draw() {
   if (!player) return;
   gems.forEach(drawDrop);
   enemies.forEach(function(e){
-    ctx.fillStyle = e.kind === 'boss' ? '#ffcc66' : (e.kind === 'shooter' ? '#66ffd1' : '#39ff14');
+    if (e.kind === 'whip' && e.whip > 0) {
+      const a = Math.atan2(player.y - e.y, player.x - e.x);
+      const reach = 72;
+      ctx.strokeStyle = '#ffd166';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(e.x, e.y);
+      ctx.quadraticCurveTo(
+        e.x + Math.cos(a + 0.7) * 36,
+        e.y + Math.sin(a + 0.7) * 36,
+        e.x + Math.cos(a) * reach,
+        e.y + Math.sin(a) * reach
+      );
+      ctx.stroke();
+    }
+    ctx.fillStyle = e.kind === 'boss' ? '#ffcc66' : (e.kind === 'shooter' ? '#66ffd1' : (e.kind === 'whip' ? '#ff9f43' : '#39ff14'));
     ctx.beginPath();
     ctx.ellipse(e.x, e.y, e.r, e.r * (e.kind === 'boss' ? 0.9 : 0.86), 0, 0, Math.PI*2);
     ctx.fill();
+    if (e.flash > 0) {
+      ctx.fillStyle = 'rgba(255,255,255,.75)';
+      ctx.beginPath();
+      ctx.ellipse(e.x, e.y, e.r, e.r * 0.86, 0, 0, Math.PI*2);
+      ctx.fill();
+    }
     ctx.fillStyle = 'rgba(0,0,0,.35)';
     ctx.fillRect(e.x - e.r, e.y - e.r - 6, e.r*2, 3);
     ctx.fillStyle = e.kind === 'boss' ? '#ffcc66' : '#ff3366';
@@ -282,6 +309,14 @@ function draw() {
   ctx.beginPath(); ctx.ellipse(-2, 2, 8, 11, 0, 0, Math.PI*2); ctx.fill();
   ctx.fillStyle = col.a;
   ctx.beginPath(); ctx.arc(6, 0, 7, 0, Math.PI*2); ctx.fill();
+  if (player.hitFlash > 0) {
+    ctx.fillStyle = 'rgba(255,60,80,.7)';
+    ctx.beginPath(); ctx.arc(2, 0, 16, 0, Math.PI*2); ctx.fill();
+  }
+  if (player.healFlash > 0) {
+    ctx.fillStyle = 'rgba(80,255,160,.7)';
+    ctx.beginPath(); ctx.arc(2, 0, 18, 0, Math.PI*2); ctx.fill();
+  }
   ctx.restore();
   ctx.globalAlpha = 1;
   particles.forEach(function(p){
@@ -290,6 +325,18 @@ function draw() {
     ctx.fillRect(p.x, p.y, p.s || 3, p.s || 3);
     ctx.globalAlpha = 1;
   });
+  flashes.forEach(function(f){
+    ctx.globalAlpha = Math.max(0, f.life * 5);
+    ctx.fillStyle = f.color;
+    ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+    f.life -= 0.016;
+  });
+  flashes = flashes.filter(function(f){ return f.life > 0; });
+  if (player) {
+    player.hitFlash = Math.max(0, (player.hitFlash||0) - 0.016);
+    player.healFlash = Math.max(0, (player.healFlash||0) - 0.016);
+  }
 }
 
 function loop(ts) {

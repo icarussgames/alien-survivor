@@ -1,5 +1,5 @@
 * { margin:0; padding:0; box-sizing:border-box; user-select:none; -webkit-user-select:none; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
-  body { background:#02020a; color:#fff; font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif; min-height:100vh; display:flex; align-items:center; justify-content:center; }
+  body { background:#02020a; color:#fff; font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; }
   #wrap { position:relative; width:min(94vw,94vh); height:min(94vw,94vh); max-width:600px; max-height:600px; aspect-ratio:1/1; border:2px solid rgba(0,255,255,.35); border-radius:16px; overflow:hidden; background:#050518; box-shadow:0 0 35px rgba(0,255,255,.2); }
   canvas { width:100%; height:100%; display:block; }
   #hud { position:absolute; top:10px; left:10px; right:10px; display:flex; justify-content:space-between; gap:6px; pointer-events:none; z-index:5; }
@@ -40,7 +40,7 @@
   #fs { position:absolute; inset:0; background:rgba(0,0,0,.94); z-index:40; display:flex; align-items:center; justify-content:center; }
   #fs img { max-width:92%; max-height:92%; object-fit:contain; }
 
-  #pad { position:absolute; left:0; right:0; bottom:18px; display:flex; justify-content:space-between; align-items:flex-end; padding:0 14px; z-index:8; pointer-events:none; }
+  #pad { position:static; width:min(94vw, 600px); display:flex; justify-content:space-between; align-items:center; padding:0 4px; pointer-events:none; }
   #stick { width:108px; height:108px; border-radius:50%; border:2px solid rgba(0,255,255,.45); background:rgba(8,16,32,.45); position:relative; pointer-events:auto; touch-action:manipulation; }
   #knob { width:42px; height:42px; border-radius:50%; background:rgba(0,242,254,.85); position:absolute; left:33px; top:33px; }
   .items { display:flex; gap:8px; pointer-events:auto; }

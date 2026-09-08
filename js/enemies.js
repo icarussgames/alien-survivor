@@ -21,14 +21,18 @@ function spawnEnemy() {
   if (edge === 3) { x = -18; y = Math.random() * H; }
   const sc = enemyScale();
   const roll = Math.random();
-  const shooter = aliveTime > 25 && roll < 0.34;
-  const rush = !shooter && aliveTime > 150 && roll < 0.55;
-  const hp = Math.max(1, Math.round((shooter ? 2 : 1) * sc.hp));
-  const spd = (rush ? 78 : (shooter ? 42 : 50)) * sc.spd;
+  const hit = basicHit();
+  let kind = 'normal';
+  if (roll < 0.34) kind = 'shooter';
+  else if (roll < 0.62) kind = 'whip';
+  const mult = kind === 'whip' ? 1.2 : (kind === 'shooter' ? 1.8 : 1.6);
+  const hp = mult * hit * sc.hp;
+  const spd = (kind === 'whip' ? 96 : (kind === 'shooter' ? 44 : 52)) * sc.spd;
   enemies.push({
-    x:x, y:y, r: rush ? 9 : (shooter ? 13 : 12),
-    hp:hp, max:hp, spd:spd, kind: shooter ? 'shooter' : (rush ? 'rush' : 'normal'),
-    shoot: 0.8 + Math.random() * 0.6, dmg: sc.dmg
+    x:x, y:y,
+    r: kind === 'whip' ? 10 : (kind === 'shooter' ? 13 : 12),
+    hp:hp, max:hp, spd:spd, kind:kind,
+    shoot: 0.45 + Math.random() * 0.4, dmg: sc.dmg, flash:0, whip:0
   });
 }
 
@@ -79,9 +83,12 @@ function updateEnemies(dt) {
     let want = e.spd;
     if (e.kind === 'shooter' && dist < 170) want = dist < 120 ? -e.spd * 0.4 : 0;
     if (e.kind === 'boss' && dist < 140) want = 0;
+    if (e.kind === 'whip' && dist < 62) want = 0;
     e.x += (dx / dist) * want * dt;
     e.y += (dy / dist) * want * dt;
     e.shoot -= dt;
+    e.flash = Math.max(0, (e.flash||0) - dt);
+    e.whip = Math.max(0, (e.whip||0) - dt);
     if (e.kind === 'shooter' && e.shoot <= 0 && dist < 280) {
       e.shoot = 1.55;
       enemyFire(e, 1);
@@ -90,7 +97,12 @@ function updateEnemies(dt) {
       e.shoot = 1.15;
       enemyFire(e, 3);
     }
-    if (Math.hypot(e.x - player.x, e.y - player.y) < e.r + player.r - 2) hurt(e.kind === 'boss' ? 2 : 1);
+    if (e.kind === 'whip' && dist < 78 && e.shoot <= 0) {
+      e.shoot = 0.85;
+      e.whip = 0.16;
+      hurt(1);
+    }
+    if (e.kind !== 'whip' && Math.hypot(e.x - player.x, e.y - player.y) < e.r + player.r - 2) hurt(e.kind === 'boss' ? 2 : 1);
   });
 
   enemyShots.forEach(function(s){
@@ -109,7 +121,9 @@ function updateEnemies(dt) {
 
 function hitEnemy(e, dmg) {
   e.hp -= dmg;
-  particles.push({ x:e.x, y:e.y, vx:(Math.random()-0.5)*40, vy:(Math.random()-0.5)*40, life:0.25, c:'#39ff14', s:3 });
+  e.flash = 0.12;
+  flashAt(e.x, e.y, e.r + 6, 'rgba(255,255,255,.9)');
+  particles.push({ x:e.x, y:e.y, vx:(Math.random()-0.5)*40, vy:(Math.random()-0.5)*40, life:0.25, c:'#fff', s:3 });
   if (e.hp > 0) return;
   unlock('alien');
   if (e.kind === 'boss') {

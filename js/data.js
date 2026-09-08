@@ -43,3 +43,5 @@ var keys = {};
 var stick = { on:false, x:0, y:0 };
 var bannerT = 0;
 var starsBg = [];
+
+var flashes = [];
