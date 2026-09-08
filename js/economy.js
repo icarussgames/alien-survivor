@@ -4,32 +4,20 @@ function price(u) {
   if (u.id === 'dano') return u.cost + owned('dano') * 8;
   return u.cost;
 }
-function nextIndex() {
-  for (let i = 0; i < TREE.length; i++) {
-    if (owned(TREE[i].id) < TREE[i].max) return i;
-  }
-  return TREE.length;
-}
-
 function openShop() {
   backScreen = screen === 'over' ? 'over' : 'menu';
   document.getElementById('shopGems').textContent = save.gems;
   const list = document.getElementById('shopList');
   list.innerHTML = '';
-  const ni = nextIndex();
-  TREE.forEach(function(u, i){
+  TREE.forEach(function(u){
     const have = owned(u.id);
-    const open = i <= ni && have < u.max;
-    const row = document.createElement('div');
-    row.className = 'row' + (open ? '' : ' lock');
-    const left = document.createElement('div');
-    left.innerHTML = '<b>'+u.icon+' '+u.name+'</b><span>'+u.desc+' · '+have+'/'+u.max+'</span>';
-    row.appendChild(left);
-    const b = document.createElement('button');
-    b.className = 'btn buy';
-    b.textContent = have >= u.max ? 'Listo' : (open ? 'Comprar 💎'+price(u) : 'Bloqueada');
-    b.onclick = function(){
-      if (!open || have >= u.max) return;
+    const open = have < u.max;
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'gcard shop-card' + (open ? '' : ' lock');
+    card.innerHTML = '<span class="ico">'+u.icon+'</span><b>'+u.name+'</b><small>'+have+'/'+u.max+' · '+(open ? '💎'+price(u) : 'Listo')+'</small>';
+    card.onclick = function(){
+      if (!open) return;
       const c = price(u);
       if (save.gems < c) { alert('Te faltan '+(c - save.gems)+' gemas.'); return; }
       save.gems -= c;
@@ -38,8 +26,7 @@ function openShop() {
       persist();
       openShop();
     };
-    row.appendChild(b);
-    list.appendChild(row);
+    list.appendChild(card);
   });
   setScreen('shop');
 }

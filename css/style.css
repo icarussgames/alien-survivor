@@ -66,3 +66,8 @@
 .gal-item .meta { display:flex; flex-wrap:wrap; gap:6px; }
 .gal-item .meta b, .gal-item .meta span { width:100%; }
 .gal-item .btn { margin:0; padding:8px 12px; font-size:.8rem; }
+
+#shop .scroll, #shopList { display:grid; grid-template-columns:1fr 1fr; gap:8px; width:100%; max-height:58%; align-content:start; }
+.shop-card { min-height:92px; cursor:pointer; color:#fff; }
+.shop-card b { font-size:.82rem; }
+.shop-card.lock { opacity:.55; cursor:default; }
