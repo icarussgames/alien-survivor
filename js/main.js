@@ -394,8 +394,15 @@ function boot() {
   document.getElementById('packClear').onclick = clearPack;
   document.getElementById('shopBack').onclick = function(){ setScreen(backScreen === 'over' ? 'over' : 'menu'); };
   document.getElementById('fs').onclick = function(){ document.getElementById('fs').classList.add('hidden'); };
-  document.getElementById('useHeal').onclick = function(ev){ ev.stopPropagation(); useHeal(); };
-  document.getElementById('useBomb').onclick = function(ev){ ev.stopPropagation(); useBomb(); };
+  bindPress(document.getElementById('useHeal'), useHeal);
+  bindPress(document.getElementById('useBomb'), useBomb);
+  bindPress(document.getElementById('fullBtn'), toggleFullscreen);
+  bindPress(document.getElementById('fsBtn'), toggleFullscreen);
+  document.addEventListener('fullscreenchange', syncFsLabel);
+  document.addEventListener('webkitfullscreenchange', syncFsLabel);
+  fitLayout();
+  window.addEventListener('resize', fitLayout);
+  window.addEventListener('orientationchange', fitLayout);
   document.getElementById('wipe').onclick = function(){ freshSave(); openShop(); };
   bindAutoCheck();
   setScreen('menu');

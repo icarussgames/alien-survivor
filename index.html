@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Alien Survivor</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -21,6 +21,7 @@
     <h1>Alien Survivor</h1>
     <p>El disparo es automático. En el celular usa el stick. Las curas y bombas se guardan y se usan después. Un jefe cada 3 minutos.</p>
     <button class="btn" id="startBtn">EMPEZAR</button>
+    <button class="btn ghost" id="fullBtn" type="button">PANTALLA COMPLETA</button>
     <div>
       <button class="btn ghost" id="shopBtn">MEJORAS</button>
       <button class="btn ghost" id="galBtn">GALERÍA</button>
@@ -77,6 +78,7 @@
   </div>
   <div id="fs" class="hidden"><img id="fsImg" alt=""></div>
 </div>
+<button id="fsBtn" type="button" aria-label="Pantalla completa">⛶</button>
 <div id="pad" class="hidden">
   <div id="stick"><div id="knob"></div></div>
   <div class="side">

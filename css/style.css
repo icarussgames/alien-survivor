@@ -46,7 +46,8 @@
   #knob { width:42px; height:42px; border-radius:50%; background:rgba(0,242,254,.85); position:absolute; left:33px; top:33px; }
   .side { display:flex; flex-direction:column; align-items:flex-end; gap:6px; pointer-events:none; }
   #stats { color:#8b93b8; font-size:.72rem; font-weight:700; letter-spacing:.3px; pointer-events:none; }
-  .items { display:flex; gap:8px; pointer-events:auto; }
+  .items { display:flex; gap:8px; pointer-events:auto; touch-action:none; }
+  .items button, .items .auto { touch-action:none; }
   .items button { width:64px; height:64px; border-radius:16px; border:1px solid rgba(255,255,255,.25); background:rgba(10,15,35,.9); color:#fff; font-weight:800; font-size:.95rem; }
   .items .auto { width:64px; height:64px; border-radius:16px; border:1px solid rgba(0,255,255,.45); background:rgba(10,15,35,.9); color:#fff; font-weight:800; font-size:.72rem; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:pointer; }
   .items .auto input { width:18px; height:18px; accent-color:#00ffff; }
@@ -71,3 +72,43 @@
 .shop-card { min-height:92px; cursor:pointer; color:#fff; }
 .shop-card b { font-size:.82rem; }
 .shop-card.lock { opacity:.55; cursor:default; }
+
+#fsBtn {
+  position:fixed; z-index:60;
+  top:max(8px, env(safe-area-inset-top));
+  right:max(8px, env(safe-area-inset-right));
+  width:42px; height:42px; border-radius:12px;
+  border:1px solid rgba(0,255,255,.45);
+  background:rgba(8,16,32,.85); color:#fff;
+  font-size:1.15rem; font-weight:800;
+  pointer-events:auto; touch-action:manipulation;
+}
+
+body.land {
+  flex-direction:row;
+  width:100%;
+  height:100dvh;
+  min-height:100dvh;
+  padding:8px;
+  padding-left:max(8px, env(safe-area-inset-left));
+  padding-right:max(8px, env(safe-area-inset-right));
+  gap:8px;
+  justify-content:center;
+  align-items:center;
+}
+body.land #pad { display:contents; width:auto; padding:0; }
+body.land #pad.hidden { display:none !important; }
+body.land #stick {
+  order:1; width:92px; height:92px; flex:none; align-self:center;
+}
+body.land #wrap {
+  order:2;
+  width:min(92dvh, calc(100vw - 220px));
+  height:min(92dvh, calc(100vw - 220px));
+  max-width:none; max-height:none;
+}
+body.land .side {
+  order:3; align-self:center; align-items:center; flex:none;
+}
+body.land .items { flex-direction:column; }
+body.land #stats { text-align:center; max-width:72px; line-height:1.35; }

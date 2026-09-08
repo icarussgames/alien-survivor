@@ -37,18 +37,26 @@ function bindInput() {
     knob.style.left = '33px';
     knob.style.top = '33px';
   }
+  let stickPointer = null;
   stickEl.addEventListener('pointerdown', function(ev){
+    if (stickPointer != null && stickPointer !== ev.pointerId) return;
     ev.preventDefault();
-    stickEl.setPointerCapture(ev.pointerId);
+    stickPointer = ev.pointerId;
+    try { stickEl.setPointerCapture(ev.pointerId); } catch (e) {}
     initAudio();
     setKnob(ev.clientX, ev.clientY);
   });
   stickEl.addEventListener('pointermove', function(ev){
-    if (!stickEl.hasPointerCapture(ev.pointerId)) return;
+    if (ev.pointerId !== stickPointer) return;
     setKnob(ev.clientX, ev.clientY);
   });
-  stickEl.addEventListener('pointerup', resetKnob);
-  stickEl.addEventListener('pointercancel', resetKnob);
+  function endStick(ev) {
+    if (stickPointer != null && ev.pointerId !== stickPointer) return;
+    stickPointer = null;
+    resetKnob();
+  }
+  stickEl.addEventListener('pointerup', endStick);
+  stickEl.addEventListener('pointercancel', endStick);
 
   window.addEventListener('keydown', function(ev){
     if (screen !== 'play') return;
@@ -61,4 +69,47 @@ function bindInput() {
   });
   window.addEventListener('keyup', function(ev){ keys[ev.code] = false; });
   window.addEventListener('blur', function(){ keys = {}; stick.on = false; });
+}
+
+
+function bindPress(el, fn) {
+  if (!el) return;
+  el.addEventListener('pointerdown', function(ev) {
+    if (ev.button != null && ev.button !== 0) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    fn();
+  });
+}
+
+function isFullscreen() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+
+function toggleFullscreen() {
+  const root = document.documentElement;
+  if (isFullscreen()) {
+    const exit = document.exitFullscreen || document.webkitExitFullscreen;
+    if (exit) exit.call(document);
+    return;
+  }
+  const req = root.requestFullscreen || root.webkitRequestFullscreen;
+  if (!req) return;
+  const p = req.call(root);
+  if (p && p.catch) p.catch(function(){});
+}
+
+function syncFsLabel() {
+  const on = isFullscreen();
+  const menu = document.getElementById('fullBtn');
+  if (menu) menu.textContent = on ? 'SALIR DE PANTALLA' : 'PANTALLA COMPLETA';
+  const icon = document.getElementById('fsBtn');
+  if (icon) icon.textContent = on ? '⤢' : '⛶';
+}
+
+function fitLayout() {
+  const land = window.matchMedia('(orientation: landscape)').matches && window.innerWidth > window.innerHeight;
+  const short = window.innerHeight <= 520;
+  const touch = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+  document.body.classList.toggle('land', !!(land && short && touch));
 }

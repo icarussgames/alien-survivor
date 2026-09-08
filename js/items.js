@@ -48,14 +48,24 @@ var bombReady = true;
 
 function bindAutoCheck() {
   const el = document.getElementById('autoCheck');
+  const label = document.getElementById('autoItem');
   if (!el) return;
   autoItemsOn = localStorage.getItem('as_auto') === '1';
   el.checked = autoItemsOn;
-  el.onchange = function() {
+  function saveAuto() {
     autoItemsOn = !!el.checked;
     localStorage.setItem('as_auto', autoItemsOn ? '1' : '0');
     bombReady = true;
-  };
+  }
+  el.onchange = saveAuto;
+  if (label) {
+    label.addEventListener('pointerdown', function(ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      el.checked = !el.checked;
+      saveAuto();
+    });
+  }
 }
 
 function autoUseItems() {
