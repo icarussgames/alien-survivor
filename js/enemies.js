@@ -4,12 +4,15 @@ var enemies = [];
 var enemyShots = [];
 var bossLive = false;
 var lastBossTier = -1;
+var boomRings = [];
+var WHIP_REACH = 64;
 
 function resetEnemies() {
   enemies = [];
   enemyShots = [];
   bossLive = false;
   lastBossTier = -1;
+  boomRings = [];
 }
 
 function spawnEnemy() {
@@ -83,7 +86,7 @@ function updateEnemies(dt) {
     let want = e.spd;
     if (e.kind === 'shooter' && dist < 170) want = dist < 120 ? -e.spd * 0.4 : 0;
     if (e.kind === 'boss' && dist < 140) want = 0;
-    if (e.kind === 'whip' && dist < 50) want = 0;
+    if (e.kind === 'whip' && dist < WHIP_REACH - 14) want = 0;
     e.x += (dx / dist) * want * dt;
     e.y += (dy / dist) * want * dt;
     e.shoot -= dt;
@@ -97,7 +100,7 @@ function updateEnemies(dt) {
       e.shoot = 1.15;
       enemyFire(e, 3);
     }
-    if (e.kind === 'whip' && dist < 64 && e.shoot <= 0) {
+    if (e.kind === 'whip' && dist < WHIP_REACH && e.shoot <= 0) {
       e.shoot = 0.85;
       e.whip = 0.16;
       hurt(20);
@@ -141,16 +144,41 @@ function rollDrop(x, y) {
   const roll = Math.random();
   if (roll < 0.05) return { kind:'heal', x:x, y:y, v:0, r:8 };
   if (roll < 0.09) return { kind:'bomb', x:x, y:y, v:0, r:8 };
+  if (roll < 0.12) return { kind:'magnet', x:x, y:y, v:0, r:8 };
   return { kind:'gem', x:x, y:y, v:1, r:6 };
 }
 
 function boom(x, y) {
   const boomDmg = Math.max(1, dmgNow() * 1.5);
+  const reach = 260;
+  boomRings.push({ x:x, y:y, reach:reach, life:0.42, max:0.42 });
   enemies.slice().forEach(function(en){
-    if (Math.hypot(en.x - x, en.y - y) < 260) hitEnemy(en, boomDmg);
+    if (Math.hypot(en.x - x, en.y - y) < reach) hitEnemy(en, boomDmg);
   });
   for (let i = 0; i < 16; i++) {
     particles.push({ x:x, y:y, vx:(Math.random()-0.5)*320, vy:(Math.random()-0.5)*320, life:0.55, c:'#ff8844', s:6 });
   }
   beep(90, 0.18, 'sawtooth', 0.07);
+}
+
+function tickBoomRings(dt) {
+  boomRings.forEach(function(b){ b.life -= dt; });
+  boomRings = boomRings.filter(function(b){ return b.life > 0; });
+}
+
+function drawBoomRings() {
+  boomRings.forEach(function(b){
+    const t = 1 - b.life / b.max;
+    const r = 16 + (b.reach - 16) * t;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, r, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,136,50,' + (0.95 * (1 - t)) + ')';
+    ctx.lineWidth = 6;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, Math.max(8, r * 0.7), 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,220,120,' + (0.7 * (1 - t)) + ')';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  });
 }

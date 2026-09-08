@@ -42,3 +42,31 @@ function refreshItems() {
   if (h) h.textContent = player ? player.heal : 0;
   if (b) b.textContent = player ? player.bombs : 0;
 }
+
+var autoItemsOn = false;
+var bombReady = true;
+
+function bindAutoCheck() {
+  const el = document.getElementById('autoCheck');
+  if (!el) return;
+  autoItemsOn = localStorage.getItem('as_auto') === '1';
+  el.checked = autoItemsOn;
+  el.onchange = function() {
+    autoItemsOn = !!el.checked;
+    localStorage.setItem('as_auto', autoItemsOn ? '1' : '0');
+    bombReady = true;
+  };
+}
+
+function autoUseItems() {
+  if (!autoItemsOn || !player || screen !== 'play') return;
+  while (player.hp < 50 && player.heal > 0 && player.hp < player.maxHp) useHeal();
+  const near = enemies.filter(function(e) {
+    return Math.hypot(e.x - player.x, e.y - player.y) < WHIP_REACH;
+  }).length;
+  if (near < 6) bombReady = true;
+  else if (bombReady && player.bombs > 0) {
+    bombReady = false;
+    useBomb();
+  }
+}

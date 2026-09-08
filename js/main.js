@@ -214,15 +214,19 @@ function update(dt) {
   const mag = magNow();
   gems.forEach(function(g){
     const d = Math.hypot(g.x - player.x, g.y - player.y);
-    if ((g.kind||'gem') === 'gem' && d < mag && d > 1) {
-      g.x += (player.x - g.x) / d * 160 * dt;
-      g.y += (player.y - g.y) / d * 160 * dt;
+    const pull = (g.kind||'gem') === 'gem' && (g.pull || d < mag) && d > 1;
+    if (pull) {
+      const spd = g.pull ? 520 : 160;
+      g.x += (player.x - g.x) / d * spd * dt;
+      g.y += (player.y - g.y) / d * spd * dt;
     }
     if (d < player.r + g.r + 4) g.got = true;
   });
   gems.filter(function(g){ return g.got; }).forEach(collectPickup);
   gems = gems.filter(function(g){ return !g.got; });
 
+  tickBoomRings(dt);
+  autoUseItems();
   particles.forEach(function(p){ p.x += p.vx*dt; p.y += p.vy*dt; p.life -= dt; });
   particles = particles.filter(function(p){ return p.life > 0; });
   starsBg.forEach(function(s){ s.y += s.v*dt; if (s.y > H) s.y = 0; });
@@ -239,6 +243,11 @@ function drawDrop(g) {
   } else if (g.kind === 'bomb') {
     ctx.fillStyle = '#ff6633';
     ctx.beginPath(); ctx.arc(0, 0, g.r, 0, Math.PI*2); ctx.fill();
+  } else if (g.kind === 'magnet') {
+    ctx.strokeStyle = '#7af7ff';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(0, 0, g.r - 1, Math.PI * 0.15, Math.PI * 0.85, true); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 0, g.r - 4, Math.PI * 0.2, Math.PI * 0.8, true); ctx.stroke();
   } else {
     ctx.fillStyle = '#ff00ff';
     ctx.beginPath();
@@ -296,6 +305,7 @@ function draw() {
     ctx.fillStyle = s.c;
     ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
   });
+  drawBoomRings();
   orbs.forEach(function(o){
     ctx.fillStyle = '#c084fc';
     ctx.beginPath(); ctx.arc(o.x, o.y, 7, 0, Math.PI*2); ctx.fill();
@@ -369,6 +379,7 @@ function boot() {
   document.getElementById('useHeal').onclick = function(ev){ ev.stopPropagation(); useHeal(); };
   document.getElementById('useBomb').onclick = function(ev){ ev.stopPropagation(); useBomb(); };
   document.getElementById('wipe').onclick = function(){ freshSave(); openShop(); };
+  bindAutoCheck();
   setScreen('menu');
   requestAnimationFrame(loop);
 }

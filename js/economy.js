@@ -62,12 +62,24 @@ function collectGem(g) {
   }
 }
 
+function pullGems() {
+  gems.forEach(function(g){
+    if ((g.kind || 'gem') === 'gem') g.pull = true;
+  });
+  banner('IMÁN');
+  beep(880, 0.1, 'sine', 0.05);
+}
+
 function collectPickup(g) {
   const kind = g.kind || 'gem';
   if (kind === 'heal' || kind === 'bomb') {
     if (!addItem(kind)) return;
     refreshItems();
     beep(500, 0.06, 'square', 0.04);
+    return;
+  }
+  if (kind === 'magnet') {
+    pullGems();
     return;
   }
   collectGem(g);
