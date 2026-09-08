@@ -30,6 +30,8 @@ function hud() {
   document.getElementById('hp').textContent = Math.max(0, Math.ceil(player ? player.hp : 0));
   document.getElementById('runGems').textContent = runGems;
   document.getElementById('lifeGems').textContent = save.gems;
+  const stats = document.getElementById('stats');
+  if (stats) stats.textContent = 'SPD ' + RUN.spd + ' · DEF ' + RUN.def + ' · ATK ' + RUN.atk;
   document.getElementById('xp').style.width = Math.min(100, (xp / xpNeed) * 100) + '%';
   refreshItems();
   if (bannerT > 0) bannerT -= 0.016;
@@ -45,7 +47,7 @@ function flashAt(x, y, r, color) {
 }
 function hurt(n) {
   if (!player || player.ifr > 0) return;
-  player.hp -= n;
+  player.hp -= takenDmg(n);
   player.ifr = 0.6;
   player.hitFlash = 0.2;
   flashAt(player.x, player.y, 26, 'rgba(255,70,90,.95)');
@@ -84,28 +86,17 @@ function nearest() {
 }
 
 function offerLevel() {
-  const mods = player.mods;
-  const pool = [
-    { id:'mag', name:'Atracción', desc:'Imán de gemas esta partida' },
-    { id:'heal', name:'Cura', desc:'Recupera 30 de vida' }
+  const picks = [
+    { id:'spd', name:'+Speed', desc:'Más rápido al moverte y al disparar. ' + nextStatLine('spd') },
+    { id:'def', name:'+Def', desc:'Menos daño recibido. ' + nextStatLine('def') },
+    { id:'atk', name:'+Atk', desc:'Más daño a enemigos. ' + nextStatLine('atk') }
   ];
-  if ((mods.dmg||0) + owned('dano') < dmgCap()) {
-    pool.unshift({ id:'dmg', name:'Filo', desc:'Daño '+((mods.dmg||0)+1)+' / techo '+dmgCap() });
-  }
-  if ((mods.spread||0) < 2) {
-    pool.splice(1, 0, { id:'spread', name:'Amplitud', desc:(mods.spread||0) === 0 ? 'Abre a 3, uno al centro' : 'Abre a 5, uno al centro' });
-  }
-  if ((mods.rate||0) < rateCap()) {
-    pool.splice(1, 0, { id:'rate', name:'Cadencia', desc:'Dispara bastante más seguido. '+((mods.rate||0)+1)+' / '+rateCap() });
-  }
-  const picks = [];
-  while (picks.length < 3 && pool.length) picks.push(pool.splice(Math.floor(Math.random()*pool.length), 1)[0]);
   const box = document.getElementById('picks');
   box.innerHTML = '';
   picks.forEach(function(p){
     const b = document.createElement('button');
     b.className = 'pick';
-    b.innerHTML = '<b>'+p.name+'</b><br><span style="color:#9499c7">'+p.desc+'</span>';
+    b.innerHTML = '<b>'+p.name+' '+RUN[p.id]+'</b><br><span style="color:#9499c7">'+p.desc+'</span>';
     b.onclick = function(){ applyPick(p.id); };
     box.appendChild(b);
   });
@@ -114,12 +105,7 @@ function offerLevel() {
 }
 
 function applyPick(id) {
-  if (!player.mods) player.mods = { dmg:0, rate:0, mag:0, spread:0 };
-  if (id === 'dmg' && owned('dano') + player.mods.dmg < dmgCap()) player.mods.dmg += 1;
-  if (id === 'rate') player.mods.rate = Math.min(rateCap(), (player.mods.rate||0) + 1);
-  if (id === 'spread') player.mods.spread = Math.min(2, (player.mods.spread||0) + 1);
-  if (id === 'mag') player.mods.mag += 28;
-  if (id === 'heal') player.hp = Math.min(player.maxHp, player.hp + 30);
+  bumpStat(id);
   setScreen('play');
 }
 
@@ -135,6 +121,7 @@ function startRun() {
   gems = []; shots = []; particles = []; orbs = [];
   if (owned('orbe')) orbs = [{ a:0 }, { a:Math.PI }];
   resetEnemies();
+  resetRunStats();
   aliveTime = 0; spawnT = 0.5; lastTs = 0;
   runGems = 0; xp = 0; lvl = 1; xpNeed = 10;
   bannerT = 0;

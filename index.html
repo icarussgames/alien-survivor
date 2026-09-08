@@ -12,6 +12,7 @@
   <div id="hud" class="hidden">
     <div class="card"><span id="time" class="cyan">0:00</span></div>
     <div class="card">HP <span id="hp" class="hp">100</span></div>
+    <div class="card" id="stats">SPD 0 · DEF 0 · ATK 0</div>
     <div class="card">💎 <span id="runGems" class="mag">0</span> · <span id="lifeGems" class="mag">0</span></div>
   </div>
   <div id="banner" class="hidden"></div>
@@ -44,7 +45,7 @@
 
   <div id="level" class="overlay hidden">
     <h1>Nivel</h1>
-    <p>Elige una mejora para esta partida.</p>
+    <p>Elige una stat para esta partida.</p>
     <div id="picks"></div>
   </div>
 
@@ -89,6 +90,7 @@
 <script src="js/state.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/levels.js"></script>
+<script src="js/player.js"></script>
 <script src="js/items.js"></script>
 <script src="js/enemies.js"></script>
 <script src="js/economy.js"></script>
