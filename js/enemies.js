@@ -116,8 +116,7 @@ function hitEnemy(e, dmg) {
     bossLive = false;
     unlock('acech');
     for (let i = 0; i < 6; i++) gems.push({ kind:'gem', x:e.x + (Math.random()-0.5)*20, y:e.y, v:1, r:7 });
-    addItem('heal');
-    addItem('bomb');
+    if (Math.random() < 0.35) gems.push(rollDrop(e.x, e.y));
   } else if (Math.random() < 0.88) {
     gems.push(rollDrop(e.x, e.y));
   }
@@ -126,8 +125,8 @@ function hitEnemy(e, dmg) {
 
 function rollDrop(x, y) {
   const roll = Math.random();
-  if (roll < 0.16) return { kind:'heal', x:x, y:y, v:0, r:8 };
-  if (roll < 0.30) return { kind:'bomb', x:x, y:y, v:0, r:8 };
+  if (roll < 0.05) return { kind:'heal', x:x, y:y, v:0, r:8 };
+  if (roll < 0.09) return { kind:'bomb', x:x, y:y, v:0, r:8 };
   return { kind:'gem', x:x, y:y, v:1, r:6 };
 }
 
