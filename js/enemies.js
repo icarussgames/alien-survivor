@@ -185,9 +185,10 @@ function bossBlast(x, y) {
 
 function rollDrop(x, y) {
   const roll = Math.random();
-  if (roll < 0.03) return { kind:'heal', x:x, y:y, v:0, r:8 };
-  if (roll < 0.06) return { kind:'bomb', x:x, y:y, v:0, r:8 };
-  if (roll < 0.09) return { kind:'magnet', x:x, y:y, v:0, r:8 };
+  const rate = itemDropRate();
+  if (roll < rate) return { kind:'heal', x:x, y:y, v:0, r:8 };
+  if (roll < rate * 2) return { kind:'bomb', x:x, y:y, v:0, r:8 };
+  if (roll < rate * 3) return { kind:'magnet', x:x, y:y, v:0, r:8 };
   return { kind:'gem', x:x, y:y, v:1, r:6 };
 }
 

@@ -44,3 +44,10 @@ function waveSpawn() {
   const cap = Math.min(42, Math.round(5 + pressure * 7 + (bossesDown || 0) * 3 + heat * 11));
   return { every:every, cap:cap, heat:WAVE_DIR.smooth, label:WAVE_DIR.label };
 }
+
+function itemDropRate() {
+  if (!WAVE_DIR) return 0.03;
+  if (WAVE_DIR.id === 'spike') return 0.07;
+  if (WAVE_DIR.id === 'hard') return 0.05;
+  return 0.03;
+}
