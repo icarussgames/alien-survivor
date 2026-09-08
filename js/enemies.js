@@ -20,7 +20,7 @@ function resetEnemies() {
 function enemyFace(e) {
   if (e.kind === 'boss') return '👿';
   if (e.kind === 'shooter') return '🛸';
-  if (e.kind === 'whip') return '🦂';
+  if (e.kind === 'whip') return '⚡';
   return '👽';
 }
 

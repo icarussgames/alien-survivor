@@ -221,27 +221,19 @@ function update(dt) {
   hud();
 }
 
+function dropFace(g) {
+  if (g.kind === 'heal') return '💖';
+  if (g.kind === 'bomb') return '💣';
+  if (g.kind === 'magnet') return '🧲';
+  return '💎';
+}
+
 function drawDrop(g) {
   ctx.save();
-  ctx.translate(g.x, g.y);
-  if (g.kind === 'heal') {
-    ctx.fillStyle = '#ff6688';
-    ctx.fillRect(-3, -g.r, 6, g.r*2);
-    ctx.fillRect(-g.r, -3, g.r*2, 6);
-  } else if (g.kind === 'bomb') {
-    ctx.fillStyle = '#ff6633';
-    ctx.beginPath(); ctx.arc(0, 0, g.r, 0, Math.PI*2); ctx.fill();
-  } else if (g.kind === 'magnet') {
-    ctx.strokeStyle = '#7af7ff';
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(0, 0, g.r - 1, Math.PI * 0.15, Math.PI * 0.85, true); ctx.stroke();
-    ctx.beginPath(); ctx.arc(0, 0, g.r - 4, Math.PI * 0.2, Math.PI * 0.8, true); ctx.stroke();
-  } else {
-    ctx.fillStyle = '#ff00ff';
-    ctx.beginPath();
-    ctx.moveTo(0, -g.r-2); ctx.lineTo(g.r, 0); ctx.lineTo(0, g.r+2); ctx.lineTo(-g.r, 0);
-    ctx.closePath(); ctx.fill();
-  }
+  ctx.font = '22px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(dropFace(g), g.x, g.y);
   ctx.restore();
 }
 
