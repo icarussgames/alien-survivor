@@ -7,4 +7,4 @@ Demo de arena (estilo survivor) para el experimento de timewasters. Un solo `ind
 - Las gemas se guardan en el navegador y desbloquean mejoras y cartas de la galería
 
 Publicación estática: la raíz del repo es el sitio. En Render, sitio estático, publish path `.`
-Fotos del pack: deja los archivos en `pack/char1`, `pack/char2` y `pack/char3`. Si falta uno, se usa el de `assets/`.
+Pack local: en el menú, Cargar pack.zip. El juego lo guarda en ese navegador y la galería lo usa al desbloquear. Si falta una foto, se usa la de `assets/`.

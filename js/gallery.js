@@ -1,45 +1,180 @@
 // ==================== GALERÍA ====================
-// Las fotos del pack van en pack/char1, pack/char2 y pack/char3.
-// Si un archivo no está, se usa la imagen de assets/.
+// Un pack.zip se descomprime en este navegador (IndexedDB).
+// No se sube a GitHub ni a Render. Si falta una foto, se usa assets/.
 
 var packSrc = {};
+var packCount = 0;
 
 var PACK_SLOTS = ['base', 's1_outfit', 's1_pose', 's2_outfit', 's2_pose'];
-var PACK_EXT = ['jpg', 'jpeg', 'png', 'webp'];
+var PACK_FILE = /(char[123])\/(base|s1_outfit|s1_pose|s2_outfit|s2_pose)\.(jpe?g|png|webp)$/i;
 
-function packFolder(char) {
-  return 'pack/char' + char.level;
-}
-
-function probeImage(url) {
-  return new Promise(function(resolve) {
-    const img = new Image();
-    img.onload = function() { resolve(url); };
-    img.onerror = function() { resolve(null); };
-    img.src = url;
+function galDb() {
+  return new Promise(function(resolve, reject) {
+    const req = indexedDB.open('as_gallery', 1);
+    req.onupgradeneeded = function() { req.result.createObjectStore('imgs'); };
+    req.onsuccess = function() { resolve(req.result); };
+    req.onerror = function() { reject(req.error); };
   });
 }
 
-function findPackFile(folder, slot) {
-  var chain = Promise.resolve(null);
-  PACK_EXT.forEach(function(ext) {
-    chain = chain.then(function(found) {
-      if (found) return found;
-      return probeImage(folder + '/' + slot + '.' + ext);
+function idbPut(slot, blob) {
+  return galDb().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      const tx = db.transaction('imgs', 'readwrite');
+      tx.objectStore('imgs').put(blob, slot);
+      tx.oncomplete = function() { resolve(); };
+      tx.onerror = function() { reject(tx.error); };
     });
   });
-  return chain;
 }
 
-function loadPack(char) {
-  const folder = packFolder(char);
-  return Promise.all(PACK_SLOTS.map(function(slot) {
-    const key = char.id + '_' + slot;
-    return findPackFile(folder, slot).then(function(url) {
-      if (url) packSrc[key] = url;
-      else delete packSrc[key];
+function idbGet(slot) {
+  return galDb().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      const req = db.transaction('imgs').objectStore('imgs').get(slot);
+      req.onsuccess = function() { resolve(req.result || null); };
+      req.onerror = function() { reject(req.error); };
     });
-  }));
+  });
+}
+
+function idbClear() {
+  return galDb().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      const tx = db.transaction('imgs', 'readwrite');
+      tx.objectStore('imgs').clear();
+      tx.oncomplete = function() { resolve(); };
+      tx.onerror = function() { reject(tx.error); };
+    });
+  });
+}
+
+function slotKey(folder, slot) {
+  return 'char_' + folder.slice(4) + '_' + slot;
+}
+
+function mimeFor(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  if (ext === 'png') return 'image/png';
+  if (ext === 'webp') return 'image/webp';
+  return 'image/jpeg';
+}
+
+function rememberBlob(slot, blob) {
+  if (packSrc[slot]) URL.revokeObjectURL(packSrc[slot]);
+  if (!blob) {
+    delete packSrc[slot];
+    return;
+  }
+  packSrc[slot] = URL.createObjectURL(blob);
+}
+
+function loadLocalPack() {
+  const slots = [];
+  [1, 2, 3].forEach(function(n) {
+    PACK_SLOTS.forEach(function(slot) { slots.push('char_' + n + '_' + slot); });
+  });
+  return Promise.all(slots.map(function(slot) {
+    return idbGet(slot).then(function(blob) {
+      rememberBlob(slot, blob);
+      return !!blob;
+    });
+  })).then(function(flags) {
+    packCount = flags.filter(Boolean).length;
+    return packCount;
+  });
+}
+
+function findEocd(view, len) {
+  const start = Math.max(0, len - 22 - 65535);
+  for (let i = len - 22; i >= start; i--) {
+    if (view.getUint32(i, true) === 0x06054b50) return i;
+  }
+  return -1;
+}
+
+function unzipEntries(buf) {
+  const view = new DataView(buf);
+  const bytes = new Uint8Array(buf);
+  const eocd = findEocd(view, bytes.length);
+  if (eocd < 0) return Promise.reject(new Error('No es un zip'));
+  const count = view.getUint16(eocd + 10, true);
+  let p = view.getUint32(eocd + 16, true);
+  const jobs = [];
+  for (let n = 0; n < count; n++) {
+    if (p + 46 > bytes.length || view.getUint32(p, true) !== 0x02014b50) break;
+    const method = view.getUint16(p + 10, true);
+    const compSize = view.getUint32(p + 20, true);
+    const nameLen = view.getUint16(p + 28, true);
+    const extraLen = view.getUint16(p + 30, true);
+    const commentLen = view.getUint16(p + 32, true);
+    const localOff = view.getUint32(p + 42, true);
+    const name = new TextDecoder('utf-8').decode(bytes.subarray(p + 46, p + 46 + nameLen));
+    const localNameLen = view.getUint16(localOff + 26, true);
+    const localExtraLen = view.getUint16(localOff + 28, true);
+    const dataStart = localOff + 30 + localNameLen + localExtraLen;
+    const comp = bytes.subarray(dataStart, dataStart + compSize);
+    jobs.push({ name: name.replace(/\\/g, '/'), method: method, comp: comp });
+    p += 46 + nameLen + extraLen + commentLen;
+  }
+  return Promise.all(jobs.map(function(job) {
+    if (job.method === 0) return Promise.resolve({ name: job.name, data: job.comp });
+    if (job.method !== 8) return Promise.resolve(null);
+    const stream = new Blob([job.comp]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return new Response(stream).arrayBuffer().then(function(out) {
+      return { name: job.name, data: new Uint8Array(out) };
+    });
+  })).then(function(rows) {
+    return rows.filter(Boolean);
+  });
+}
+
+function importPackZip(file) {
+  return file.arrayBuffer().then(unzipEntries).then(function(entries) {
+    const found = [];
+    entries.forEach(function(entry) {
+      if (!entry || /__MACOSX|(^|\/)\./.test(entry.name)) return;
+      const match = entry.name.match(PACK_FILE);
+      if (!match) return;
+      found.push({
+        slot: slotKey(match[1].toLowerCase(), match[2].toLowerCase()),
+        blob: new Blob([entry.data], { type: mimeFor(entry.name) })
+      });
+    });
+    if (!found.length) {
+      throw new Error('El zip no trae fotos con el nombre esperado. Usa char1/base.jpg y el resto igual.');
+    }
+    return idbClear().then(function() {
+      return Promise.all(found.map(function(item) { return idbPut(item.slot, item.blob); }));
+    }).then(function() { return loadLocalPack(); });
+  });
+}
+
+function pickPackZip() {
+  const input = document.getElementById('packFile');
+  input.value = '';
+  input.onchange = function() {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    importPackZip(file).then(function(n) {
+      alert('Pack cargado en este navegador: ' + n + ' fotos. No se subió a ningún lado.');
+      if (screen === 'gal') renderGal();
+    }).catch(function(err) {
+      alert(err && err.message ? err.message : 'No pude leer ese zip.');
+    });
+  };
+  input.click();
+}
+
+function clearPack() {
+  idbClear().then(function() {
+    Object.keys(packSrc).forEach(function(slot) {
+      URL.revokeObjectURL(packSrc[slot]);
+      delete packSrc[slot];
+    });
+    packCount = 0;
+    if (screen === 'gal') renderGal();
+  });
 }
 
 function syncPhotos() {
@@ -64,7 +199,7 @@ function openGal() {
   if (screen === 'over') backScreen = 'over';
   else if (screen !== 'lib') backScreen = 'menu';
   syncPhotos();
-  loadPack(CHARS[galIndex]).then(function() {
+  loadLocalPack().then(function() {
     renderGal();
     setScreen('gal');
   }).catch(function() {
@@ -74,7 +209,10 @@ function openGal() {
 }
 
 function renderGal() {
-  document.getElementById('galHint').textContent = 'Gemas: ' + save.gems + ' · de por vida ' + (save.life|0);
+  const local = packCount ? ' · pack local: ' + packCount + ' fotos' : '';
+  document.getElementById('galHint').textContent = 'Gemas: ' + save.gems + ' · de por vida ' + (save.life|0) + local;
+  const clear = document.getElementById('packClear');
+  if (clear) clear.disabled = !packCount;
   const tabs = document.getElementById('galTabs');
   tabs.innerHTML = '';
   CHARS.forEach(function(char, i){

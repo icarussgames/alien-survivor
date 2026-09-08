@@ -361,6 +361,9 @@ function boot() {
   document.getElementById('galBtn2').onclick = openGal;
   if (document.getElementById('libBack')) document.getElementById('libBack').onclick = openGal;
   document.getElementById('galBack').onclick = function(){ setScreen(backScreen === 'over' ? 'over' : 'menu'); };
+  document.getElementById('packBtn').onclick = pickPackZip;
+  document.getElementById('packBtn2').onclick = pickPackZip;
+  document.getElementById('packClear').onclick = clearPack;
   document.getElementById('shopBack').onclick = function(){ setScreen(backScreen === 'over' ? 'over' : 'menu'); };
   document.getElementById('fs').onclick = function(){ document.getElementById('fs').classList.add('hidden'); };
   document.getElementById('useHeal').onclick = function(ev){ ev.stopPropagation(); useHeal(); };
