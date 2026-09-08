@@ -57,3 +57,7 @@
 .gal-item b { display:block; font-size:.9rem; }
 .gal-item span { color:#9499c7; font-size:.75rem; }
 .gal-item .buy { width:100%; margin-top:6px; padding:8px 10px; font-size:.85rem; }
+
+.gal-item .meta { display:flex; flex-wrap:wrap; gap:6px; }
+.gal-item .meta b, .gal-item .meta span { width:100%; }
+.gal-item .btn { margin:0; padding:8px 12px; font-size:.8rem; }
