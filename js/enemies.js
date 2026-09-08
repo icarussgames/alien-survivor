@@ -52,7 +52,7 @@ function spawnBoss() {
   if (bossLive) return;
   const sc = enemyScale();
   const first = bossesDown === 0;
-  const hp = Math.round((first ? 54 : 32) * sc.hp * (1 + bossesDown * 0.45));
+  const hp = Math.round((first ? 110 : 32) * sc.hp * (1 + bossesDown * 0.45));
   enemies.push({
     x: W / 2, y: -30, r: 28, hp:hp, max:hp, bars: 1 + bossesDown,
     spd: 34 * sc.spd, kind: 'boss', shoot: 0.8, dmg: 1.4 * sc.dmg, big: true,
@@ -60,7 +60,7 @@ function spawnBoss() {
     kit: first, move: 'shot', phase: 'cool'
   });
   bossLive = true;
-  banner(first ? 'JEFE · látigo y bomba' : 'JEFE');
+  banner(first ? 'JEFE · disparo y látigo' : 'JEFE');
   beep(90, 0.28, 'sawtooth', 0.07);
 }
 
@@ -75,7 +75,7 @@ function maybeBoss() {
 function enemyFire(e, spread) {
   const a = Math.atan2(player.y - e.y, player.x - e.x);
   const n = spread || 1;
-  const step = 0.18;
+  const step = n >= 5 ? 0.22 : 0.18;
   const mid = (n - 1) / 2;
   for (let i = 0; i < n; i++) {
     const aa = a + (i - mid) * step;
@@ -156,16 +156,15 @@ function bossAct(e, dist) {
   if (e.phase === 'tell') {
     e.tell = 0.7;
     if (e.shoot > 0) return;
-    if (e.move === 'shot') enemyFire(e, 3);
+    if (e.move === 'shot') enemyFire(e, e.kit ? 5 : 3);
     if (e.move === 'whip') {
       e.whip = 0.18;
       if (dist < WHIP_REACH + 16) hurt(20);
     }
-    if (e.move === 'bomb') bossBlast(e.x, e.y);
     e.phase = 'cool';
     e.shoot = 1.15;
     e.tell = 0;
-    if (e.kit) e.move = e.move === 'shot' ? 'whip' : (e.move === 'whip' ? 'bomb' : 'shot');
+    if (e.kit) e.move = e.move === 'shot' ? 'whip' : 'shot';
     return;
   }
   e.tell = 0;
@@ -174,7 +173,7 @@ function bossAct(e, dist) {
   e.shoot = 0.7;
   e.tell = 0.7;
   if (!e.kit) e.move = 'shot';
-  e.tellColor = e.move === 'whip' ? '#ff9f43' : (e.move === 'bomb' ? '#ffe14a' : '#7af7ff');
+  e.tellColor = e.move === 'whip' ? '#ff9f43' : '#7af7ff';
 }
 
 function bossBlast(x, y) {
@@ -186,9 +185,9 @@ function bossBlast(x, y) {
 
 function rollDrop(x, y) {
   const roll = Math.random();
-  if (roll < 0.06) return { kind:'heal', x:x, y:y, v:0, r:8 };
-  if (roll < 0.12) return { kind:'bomb', x:x, y:y, v:0, r:8 };
-  if (roll < 0.18) return { kind:'magnet', x:x, y:y, v:0, r:8 };
+  if (roll < 0.03) return { kind:'heal', x:x, y:y, v:0, r:8 };
+  if (roll < 0.06) return { kind:'bomb', x:x, y:y, v:0, r:8 };
+  if (roll < 0.09) return { kind:'magnet', x:x, y:y, v:0, r:8 };
   return { kind:'gem', x:x, y:y, v:1, r:6 };
 }
 

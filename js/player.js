@@ -13,20 +13,20 @@ function bumpStat(id) {
 
 function moveNow() {
   const base = owned('botas') ? 190 : 145;
-  return Math.round(base * (1 + RUN.spd * 0.12));
+  return Math.round(base * (1 + RUN.spd * 0.06));
 }
 
 function fireNow() {
-  return Math.max(0.14, 0.50 * Math.pow(0.78, RUN.spd));
+  return Math.max(0.18, 0.50 * Math.pow(0.89, RUN.spd));
 }
 
 function shotDmg() {
   const base = 1 + owned('dano');
-  return Math.round(base * (1 + RUN.atk * 0.4) * 10) / 10;
+  return Math.round(base * (1 + RUN.atk * 0.2) * 10) / 10;
 }
 
 function takenDmg(n) {
-  const mul = Math.max(0.4, 1 - RUN.def * 0.15);
+  const mul = Math.max(0.55, 1 - RUN.def * 0.075);
   return Math.max(1, Math.round(n * mul));
 }
 
@@ -35,7 +35,7 @@ function statLine(id) {
     return 'Mov ' + moveNow() + ' · disparo ' + fireNow().toFixed(2) + 's';
   }
   if (id === 'def') {
-    return 'Recibes ' + Math.round(Math.max(0.4, 1 - RUN.def * 0.15) * 100) + '%';
+    return 'Recibes ' + Math.round(Math.max(0.55, 1 - RUN.def * 0.075) * 100) + '%';
   }
   return 'Daño ' + shotDmg();
 }
