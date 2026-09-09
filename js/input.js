@@ -32,6 +32,10 @@ function pollGamepad() {
     padPrev[id] = on;
     return on && !was;
   }
+  if (screen === 'stage') {
+    if (edge('stageOk', pressed(0))) exitStageToMenu();
+    return;
+  }
   if (screen === 'level') {
     if (edge('lvUp', pressed(12) || pressed(14))) moveLevelPick(-1);
     if (edge('lvDown', pressed(13) || pressed(15))) moveLevelPick(1);
@@ -103,6 +107,10 @@ function bindInput() {
   stickEl.addEventListener('pointercancel', endStick);
 
   window.addEventListener('keydown', function(ev){
+    if (screen === 'stage') {
+      if (ev.code === 'Enter' || ev.code === 'Space') { ev.preventDefault(); if (!ev.repeat) exitStageToMenu(); }
+      return;
+    }
     if (screen === 'level') {
       if (ev.code === 'ArrowUp' || ev.code === 'ArrowLeft') { ev.preventDefault(); if (!ev.repeat) moveLevelPick(-1); return; }
       if (ev.code === 'ArrowDown' || ev.code === 'ArrowRight') { ev.preventDefault(); if (!ev.repeat) moveLevelPick(1); return; }

@@ -159,12 +159,21 @@ function hitEnemy(e, dmg) {
     bossesDown += 1;
     unlock('acech');
     const reward = bossReward(e.reward|0);
-    if (reward && !ownsSpecial(reward.kind)) {
-      gems.push({ kind:reward.kind, special:true, x:e.x, y:e.y, v:0, r:10 });
+    if (bossesDown === 1) {
+      if (reward && !ownsSpecial(reward.kind)) takeSpecial(reward.kind);
+      runGems += 4;
+      save.gems += 4;
+      save.life = (save.life|0) + 4;
+      persist();
+      beginStageClear(e.x, e.y);
+    } else {
+      if (reward && !ownsSpecial(reward.kind)) {
+        gems.push({ kind:reward.kind, special:true, x:e.x, y:e.y, v:0, r:10 });
+      }
+      afterBossWaves();
+      banner(reward ? reward.label : 'Oleadas');
+      for (let i = 0; i < 4; i++) gems.push({ kind:'gem', x:e.x + (Math.random()-0.5)*24, y:e.y, v:1, r:7 });
     }
-    afterBossWaves();
-    banner(reward ? reward.label : 'Oleadas');
-    for (let i = 0; i < 4; i++) gems.push({ kind:'gem', x:e.x + (Math.random()-0.5)*24, y:e.y, v:1, r:7 });
   } else if (Math.random() < 0.88) {
     gems.push(rollDrop(e.x, e.y));
   }

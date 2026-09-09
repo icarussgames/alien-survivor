@@ -43,6 +43,8 @@ var backScreen = 'menu';
 var keys = {};
 var stick = { on:false, x:0, y:0 };
 var bannerT = 0;
+var hyper = 0;
+var stageClear = 0;
 var starsBg = [];
 
 var flashes = [];

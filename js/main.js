@@ -5,7 +5,7 @@ const ctx = canvas.getContext('2d');
 
 function setScreen(name) {
   screen = name;
-  ['menu','over','level','shop','gal','lib','hud','bar','pad'].forEach(function(n){
+  ['menu','over','level','stage','shop','gal','lib','hud','bar','pad'].forEach(function(n){
     const el = document.getElementById(n);
     if (!el) return;
     const show = n === name || (name === 'play' && (n === 'hud' || n === 'bar' || n === 'pad'));
@@ -143,6 +143,7 @@ function startRun() {
   };
   flashes = [];
   gems = []; shots = []; particles = []; exhaust = []; orbs = [];
+  hyper = 0; stageClear = 0;
   if (owned('orbe')) orbs = [{ a:0 }, { a:Math.PI }];
   resetEnemies();
   resetRunStats();
@@ -156,7 +157,69 @@ function startRun() {
   if (!raf) raf = requestAnimationFrame(loop);
 }
 
+function exitStageToMenu() {
+  hyper = 0;
+  stageClear = 0;
+  setScreen('menu');
+}
+
+function beginStageClear(x, y) {
+  enemies = [];
+  enemyShots = [];
+  shots = [];
+  gems = [];
+  boomRings.push({ x:x, y:y, reach:520, life:0.7, max:0.7 });
+  for (let i = 0; i < 28; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const spd = 80 + Math.random() * 260;
+    particles.push({ x:x, y:y, vx:Math.cos(a)*spd, vy:Math.sin(a)*spd, life:0.7, c: i % 2 ? '#7af7ff' : '#ffcc66', s:4 });
+  }
+  hyper = 1;
+  stageClear = 2.4;
+  banner('ETAPA 1');
+  beep(70, 0.35, 'sawtooth', 0.08);
+}
+
+function tickStars(dt) {
+  const cx = W / 2, cy = H / 2;
+  starsBg.forEach(function(s){
+    if (hyper > 0) {
+      let dx = s.x - cx, dy = s.y - cy;
+      const dist = Math.hypot(dx, dy) || 1;
+      const spd = (50 + s.v * 16) * (4 + hyper * 10) * dt;
+      s.x += dx / dist * spd;
+      s.y += dy / dist * spd;
+      s.streak = 10 + hyper * 36;
+      if (s.x < -30 || s.x > W + 30 || s.y < -30 || s.y > H + 30) {
+        const a = Math.random() * Math.PI * 2;
+        const r = 10 + Math.random() * 36;
+        s.x = cx + Math.cos(a) * r;
+        s.y = cy + Math.sin(a) * r;
+      }
+    } else {
+      s.streak = 0;
+      s.y += s.v * dt;
+      if (s.y > H) { s.y = 0; s.x = Math.random() * W; }
+    }
+  });
+}
+
 function update(dt) {
+  if (stageClear > 0) {
+    stageClear -= dt;
+    hyper = 1 + (2.4 - Math.max(0, stageClear)) * 1.4;
+    tickStars(dt);
+    tickBoomRings(dt);
+    particles.forEach(function(p){ p.x += p.vx*dt; p.y += p.vy*dt; p.life -= dt; });
+    particles = particles.filter(function(p){ return p.life > 0; });
+    if (stageClear <= 0) {
+      const el = document.getElementById('stageGems');
+      if (el) el.textContent = save.gems;
+      setScreen('stage');
+    }
+    hud();
+    return;
+  }
   aliveTime += dt;
   if (aliveTime >= 30) unlock('oleada');
   if (aliveTime >= 60) unlock('acech');
@@ -245,7 +308,7 @@ function update(dt) {
   autoUseItems();
   particles.forEach(function(p){ p.x += p.vx*dt; p.y += p.vy*dt; p.life -= dt; });
   particles = particles.filter(function(p){ return p.life > 0; });
-  starsBg.forEach(function(s){ s.y += s.v*dt; if (s.y > H) s.y = 0; });
+  tickStars(dt);
   hud();
 }
 
@@ -339,8 +402,21 @@ function draw() {
   ctx.fillStyle = '#050518';
   ctx.fillRect(0, 0, W, H);
   starsBg.forEach(function(s){
-    ctx.fillStyle = 'rgba(180,220,255,.7)';
-    ctx.fillRect(s.x, s.y, s.s, s.s);
+    if (s.streak) {
+      const cx = W / 2, cy = H / 2;
+      const dx = s.x - cx, dy = s.y - cy;
+      const dist = Math.hypot(dx, dy) || 1;
+      ctx.strokeStyle = 'rgba(190,235,255,.9)';
+      ctx.lineWidth = Math.max(1, s.s);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(s.x, s.y);
+      ctx.lineTo(s.x - dx / dist * s.streak, s.y - dy / dist * s.streak);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = 'rgba(180,220,255,.7)';
+      ctx.fillRect(s.x, s.y, s.s, s.s);
+    }
   });
   if (!player) return;
   gems.forEach(drawDrop);
@@ -514,6 +590,8 @@ function boot() {
   window.addEventListener('orientationchange', fitLayout);
   document.getElementById('wipe').onclick = function(){ freshSave(); openShop(); };
   bindAutoCheck();
+  const stageMenu = document.getElementById('stageMenu');
+  if (stageMenu) stageMenu.onclick = exitStageToMenu;
   setScreen('menu');
   requestAnimationFrame(loop);
 }
