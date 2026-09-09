@@ -5,6 +5,10 @@ var RUN = { spd: 0, def: 0, atk: 0, mag: 0, fan: 0, specs:{} };
 
 function resetRunStats() {
   RUN = { spd: 0, def: 0, atk: 0, mag: 0, fan: 0, specs:{} };
+  if (save && save.specs && save.specs.fan) {
+    RUN.fan = 1;
+    RUN.specs.fan = true;
+  }
 }
 
 function bumpStat(id) {
@@ -77,7 +81,14 @@ function takeSpecial(kind) {
   if (!RUN.specs) RUN.specs = {};
   if (RUN.specs[kind]) return false;
   RUN.specs[kind] = true;
-  if (kind === 'fan') RUN.fan = 1;
+  if (kind === 'fan') {
+    RUN.fan = 1;
+    if (save) {
+      save.specs = save.specs || {};
+      save.specs.fan = true;
+      persist();
+    }
+  }
   for (var i = 0; i < BOSS_REWARDS.length; i++) {
     if (BOSS_REWARDS[i].kind === kind) {
       banner(BOSS_REWARDS[i].label);
