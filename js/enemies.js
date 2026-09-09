@@ -104,7 +104,7 @@ function enemyFire(e, spread) {
 
 function updateEnemies(dt) {
   maybeBoss();
-  enemies.forEach(function(e){
+  enemies.slice().forEach(function(e){
     const dx = player.x - e.x, dy = player.y - e.y;
     const dist = Math.hypot(dx, dy) || 1;
     let want = e.spd;
@@ -116,6 +116,7 @@ function updateEnemies(dt) {
     e.shoot -= dt;
     e.flash = Math.max(0, (e.flash||0) - dt);
     e.whip = Math.max(0, (e.whip||0) - dt);
+    e.ramCd = Math.max(0, (e.ramCd||0) - dt);
     if (e.kind === 'shooter' && e.shoot <= 0 && dist < 280) {
       e.shoot = 1.55;
       enemyFire(e, 1);
@@ -124,9 +125,12 @@ function updateEnemies(dt) {
     if (e.kind === 'whip' && dist < WHIP_REACH && e.shoot <= 0) {
       e.shoot = 0.85;
       e.whip = 0.16;
-      hurt(20);
+      if (!(player.star > 0)) hurt(20);
     }
-    if (e.kind !== 'whip' && Math.hypot(e.x - player.x, e.y - player.y) < e.r + player.r - 2) hurt(e.kind === 'boss' ? 20 : 10);
+    if (e.kind !== 'whip' && Math.hypot(e.x - player.x, e.y - player.y) < e.r + player.r - 2) {
+      if (player.star > 0) ramEnemy(e);
+      else hurt(e.kind === 'boss' ? 20 : 10);
+    }
   });
 
   enemyShots.forEach(function(s){
@@ -199,12 +203,20 @@ function bossBlast(x, y) {
   beep(70, 0.2, 'sawtooth', 0.07);
 }
 
+function ramEnemy(e) {
+  if (!e || e.ramCd > 0) return;
+  e.ramCd = 0.22;
+  hitEnemy(e, e.kind === 'boss' ? dmgNow() : Math.max(e.hp, 1));
+  flashAt(e.x, e.y, 16, 'rgba(255,210,60,.9)');
+}
+
 function rollDrop(x, y) {
   const roll = Math.random();
   const rate = itemDropRate();
   if (roll < rate) return { kind:'heal', x:x, y:y, v:0, r:8 };
   if (roll < rate * 2) return { kind:'bomb', x:x, y:y, v:0, r:8 };
   if (roll < rate * 3) return { kind:'magnet', x:x, y:y, v:0, r:8 };
+  if (roll < rate * 4) return { kind:'star', x:x, y:y, v:0, r:8 };
   return { kind:'gem', x:x, y:y, v:1, r:6 };
 }
 

@@ -46,7 +46,7 @@ function flashAt(x, y, r, color) {
   flashes.push({ x:x, y:y, r:r, life:0.16, color:color });
 }
 function hurt(n) {
-  if (!player || player.ifr > 0) return;
+  if (!player || player.ifr > 0 || player.star > 0) return;
   player.hp -= takenDmg(n);
   player.ifr = 0.6;
   player.hitFlash = 0.2;
@@ -116,10 +116,10 @@ function startRun() {
     x:300, y:300, r:14, hp:maxHp(), maxHp:maxHp(),
     ang:0, ifr:0, shoot:0.25, cone:0.5,
     mods:{ dmg:0, rate:0, mag:0, spread:0 },
-    heal:0, bombs:0, hitFlash:0, healFlash:0
+    heal:0, bombs:0, hitFlash:0, healFlash:0, star:0
   };
   flashes = [];
-  gems = []; shots = []; particles = []; orbs = [];
+  gems = []; shots = []; particles = []; exhaust = []; orbs = [];
   if (owned('orbe')) orbs = [{ a:0 }, { a:Math.PI }];
   resetEnemies();
   resetRunStats();
@@ -200,6 +200,9 @@ function update(dt) {
 
   updateEnemies(dt);
 
+  if (player.star > 0) player.star = Math.max(0, player.star - dt);
+  tickExhaust(dt);
+
   const mag = magNow();
   gems.forEach(function(g){
     const d = Math.hypot(g.x - player.x, g.y - player.y);
@@ -227,6 +230,7 @@ function dropFace(g) {
   if (g.kind === 'heal') return '💖';
   if (g.kind === 'bomb') return '💣';
   if (g.kind === 'magnet') return '🧲';
+  if (g.kind === 'star') return '⭐';
   if (g.special || g.kind === 'fan') return specialFace(g.kind);
   return '💎';
 }
@@ -237,6 +241,74 @@ function drawDrop(g) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(dropFace(g), g.x, g.y);
+  ctx.restore();
+}
+
+
+function tickExhaust(dt) {
+  if (!player) return;
+  const back = player.ang + Math.PI;
+  player.exhaustAcc = (player.exhaustAcc || 0) + dt;
+  const every = 0.026;
+  while (player.exhaustAcc >= every) {
+    player.exhaustAcc -= every;
+    const spread = (Math.random() - 0.5) * 0.4;
+    const a = back + spread;
+    const ox = player.x + Math.cos(back) * 12 + (Math.random() - 0.5) * 3;
+    const oy = player.y + Math.sin(back) * 12 + (Math.random() - 0.5) * 3;
+    const spd = 170 + Math.random() * 190;
+    exhaust.push({
+      x:ox, y:oy, px:ox, py:oy,
+      vx:Math.cos(a) * spd, vy:Math.sin(a) * spd,
+      life:0.2 + Math.random() * 0.12, max:0.32
+    });
+  }
+  exhaust.forEach(function(p){
+    p.px = p.x; p.py = p.y;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.life -= dt;
+  });
+  if (exhaust.length > 90) exhaust.splice(0, exhaust.length - 90);
+  exhaust = exhaust.filter(function(p){ return p.life > 0; });
+}
+
+function drawExhaust() {
+  ctx.save();
+  ctx.lineCap = 'round';
+  exhaust.forEach(function(p){
+    const k = Math.max(0, p.life / (p.max || 0.3));
+    ctx.globalAlpha = k;
+    ctx.strokeStyle = k > 0.55 ? '#fff4c4' : (k > 0.28 ? '#ffb347' : '#ff5a1f');
+    ctx.lineWidth = 1.3 + k * 1.8;
+    ctx.beginPath();
+    ctx.moveTo(p.px, p.py);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  });
+  ctx.restore();
+}
+
+function gradeFrame() {
+  ctx.save();
+  const g = ctx.createRadialGradient(W * 0.5, H * 0.48, W * 0.16, W * 0.5, H * 0.5, W * 0.78);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(0.7, 'rgba(4,0,16,0.1)');
+  g.addColorStop(1, 'rgba(2,0,12,0.58)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'soft-light';
+  const wash = ctx.createLinearGradient(0, 0, W, H);
+  if (player && player.star > 0) {
+    wash.addColorStop(0, 'rgba(255,214,70,.4)');
+    wash.addColorStop(1, 'rgba(255,70,170,.24)');
+  } else {
+    wash.addColorStop(0, 'rgba(0,190,255,.28)');
+    wash.addColorStop(0.55, 'rgba(16,8,32,.08)');
+    wash.addColorStop(1, 'rgba(255,40,170,.22)');
+  }
+  ctx.fillStyle = wash;
+  ctx.fillRect(0, 0, W, H);
   ctx.restore();
 }
 
@@ -306,13 +378,21 @@ function draw() {
     ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
   });
   drawBoomRings();
+  drawExhaust();
   orbs.forEach(function(o){
     ctx.fillStyle = '#c084fc';
     ctx.beginPath(); ctx.arc(o.x, o.y, 7, 0, Math.PI*2); ctx.fill();
   });
   const col = skin();
   ctx.save();
-  ctx.globalAlpha = player.ifr > 0 && Math.floor(player.ifr * 16) % 2 === 0 ? 0.35 : 1;
+  if (player.star > 0) {
+    ctx.strokeStyle = 'rgba(255,210,70,.85)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, 20 + Math.sin(aliveTime * 14) * 3, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = player.ifr > 0 && !(player.star > 0) && Math.floor(player.ifr * 16) % 2 === 0 ? 0.35 : 1;
   ctx.translate(player.x, player.y);
   ctx.rotate(player.ang);
   ctx.lineJoin = 'round';
@@ -345,6 +425,10 @@ function draw() {
     ctx.fillStyle = 'rgba(80,255,160,.55)';
     ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI*2); ctx.fill();
   }
+  if (player.star > 0) {
+    ctx.fillStyle = 'rgba(255,214,70,.35)';
+    ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI*2); ctx.fill();
+  }
   ctx.restore();
   ctx.globalAlpha = 1;
   particles.forEach(function(p){
@@ -361,6 +445,7 @@ function draw() {
     f.life -= 0.016;
   });
   flashes = flashes.filter(function(f){ return f.life > 0; });
+  gradeFrame();
   if (player) {
     player.hitFlash = Math.max(0, (player.hitFlash||0) - 0.016);
     player.healFlash = Math.max(0, (player.healFlash||0) - 0.016);

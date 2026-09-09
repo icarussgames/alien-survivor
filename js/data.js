@@ -27,6 +27,7 @@ var player = null;
 var gems = [];
 var shots = [];
 var particles = [];
+var exhaust = [];
 var orbs = [];
 var screen = 'menu';
 var aliveTime = 0;
