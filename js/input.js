@@ -32,6 +32,12 @@ function pollGamepad() {
     padPrev[id] = on;
     return on && !was;
   }
+  if (screen === 'level') {
+    if (edge('lvUp', pressed(12) || pressed(14))) moveLevelPick(-1);
+    if (edge('lvDown', pressed(13) || pressed(15))) moveLevelPick(1);
+    if (edge('lvOk', pressed(0))) confirmLevelPick();
+    return;
+  }
   if (screen === 'play') {
     // Cross / Square / L1 heal. Circle / R1 bomb. Standard map covers DualSense.
     if (edge('heal', pressed(0) || pressed(2) || pressed(4))) useHeal();
@@ -97,6 +103,12 @@ function bindInput() {
   stickEl.addEventListener('pointercancel', endStick);
 
   window.addEventListener('keydown', function(ev){
+    if (screen === 'level') {
+      if (ev.code === 'ArrowUp' || ev.code === 'ArrowLeft') { ev.preventDefault(); if (!ev.repeat) moveLevelPick(-1); return; }
+      if (ev.code === 'ArrowDown' || ev.code === 'ArrowRight') { ev.preventDefault(); if (!ev.repeat) moveLevelPick(1); return; }
+      if (ev.code === 'Enter' || ev.code === 'Space') { ev.preventDefault(); if (!ev.repeat) confirmLevelPick(); return; }
+      return;
+    }
     if (screen !== 'play') return;
     const move = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyW','KeyA','KeyS','KeyD'].indexOf(ev.code) >= 0;
     if (move) ev.preventDefault();

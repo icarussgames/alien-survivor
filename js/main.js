@@ -85,6 +85,27 @@ function nearest() {
   return best;
 }
 
+var levelPick = 0;
+
+function paintLevelPick() {
+  const nodes = document.querySelectorAll('#picks .pick');
+  nodes.forEach(function(n, i){ n.classList.toggle('on', i === levelPick); });
+  if (nodes[levelPick]) nodes[levelPick].scrollIntoView({ block:'nearest' });
+}
+
+function moveLevelPick(dir) {
+  const n = document.querySelectorAll('#picks .pick').length;
+  if (!n) return;
+  levelPick = (levelPick + dir + n) % n;
+  paintLevelPick();
+}
+
+function confirmLevelPick() {
+  const nodes = document.querySelectorAll('#picks .pick');
+  const el = nodes[levelPick];
+  if (el) el.click();
+}
+
 function offerLevel() {
   const picks = [
     { id:'spd', name:'+Speed', desc:'Más rápido al moverte y al disparar. ' + nextStatLine('spd') },
@@ -101,6 +122,8 @@ function offerLevel() {
     b.onclick = function(){ applyPick(p.id); };
     box.appendChild(b);
   });
+  levelPick = 0;
+  paintLevelPick();
   setScreen('level');
   beep(540, 0.1, 'square', 0.05);
 }

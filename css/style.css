@@ -29,6 +29,7 @@
   .gcard small { color:#8b90b8; font-size:.72rem; text-align:center; }
   .pick { width:100%; max-width:320px; background:#10162e; border:1px solid rgba(0,255,255,.35); color:#fff; border-radius:12px; padding:12px; margin:6px 0; cursor:pointer; text-align:left; }
   .pick:active { transform:scale(.98); }
+  .pick.on { border-color:#00ffff; box-shadow:0 0 0 2px rgba(0,255,255,.45), 0 0 16px rgba(0,255,255,.25); }
 
   .gal-row { display:flex; align-items:center; gap:8px; width:100%; justify-content:center; }
   .photo-card { width:min(34vw, 150px); aspect-ratio:3/4; border-radius:12px; overflow:hidden; background:#000; border:1px solid rgba(255,0,255,.35); flex:none; }
