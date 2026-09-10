@@ -4,18 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Alien Survivor</title>
-<link rel="stylesheet" href="css/style.css?v=21">
+<link rel="stylesheet" href="css/style.css?v=22">
 </head>
 <body>
-<div id="wrap">
-  <canvas id="c" width="600" height="600"></canvas>
-  <div id="hud" class="hidden">
+<div id="shell">
+<div id="chrome" class="hidden">
+  <div id="hud">
     <div class="card"><span id="time" class="cyan">0:00</span></div>
     <div class="card">HP <span id="hp" class="hp">150</span></div>
     <div class="card">💎 <span id="runGems" class="mag">0</span> · <span id="lifeGems" class="mag">0</span></div>
   </div>
+  <div id="bossHud" class="hidden">
+    <span class="boss-label">BOSS</span>
+    <div class="boss-track"><i id="bossHp"></i></div>
+  </div>
+  <div id="bar"><i id="xp"></i></div>
+</div>
+<div id="wrap">
+  <canvas id="c" width="600" height="600"></canvas>
   <div id="banner" class="hidden"></div>
-  <div id="bar" class="hidden"><i id="xp"></i></div>
 
   <div id="menu" class="overlay">
     <h1>Alien Survivor</h1>
@@ -97,7 +104,6 @@
   </div>
   <div id="fs" class="hidden"><img id="fsImg" alt=""></div>
 </div>
-<button id="fsBtn" type="button" aria-label="Fullscreen">⛶</button>
 <div id="pad" class="hidden">
   <div id="stick"><div id="knob"></div></div>
   <div class="side">
@@ -108,17 +114,19 @@
     <div id="stats">SPD 0  DEF 0  ATK 0  MAG 0</div>
   </div>
 </div>
-<script src="js/data.js?v=21"></script>
-<script src="js/state.js?v=21"></script>
-<script src="js/audio.js?v=21"></script>
-<script src="js/levels.js?v=21"></script>
-<script src="js/player.js?v=21"></script>
-<script src="js/items.js?v=21"></script>
-<script src="js/waves.js?v=21"></script>
-<script src="js/enemies.js?v=21"></script>
-<script src="js/economy.js?v=21"></script>
-<script src="js/gallery.js?v=21"></script>
-<script src="js/input.js?v=21"></script>
-<script src="js/main.js?v=21"></script>
+</div>
+<button id="fsBtn" type="button" aria-label="Fullscreen">⛶</button>
+<script src="js/data.js?v=22"></script>
+<script src="js/state.js?v=22"></script>
+<script src="js/audio.js?v=22"></script>
+<script src="js/levels.js?v=22"></script>
+<script src="js/player.js?v=22"></script>
+<script src="js/items.js?v=22"></script>
+<script src="js/waves.js?v=22"></script>
+<script src="js/enemies.js?v=22"></script>
+<script src="js/economy.js?v=22"></script>
+<script src="js/gallery.js?v=22"></script>
+<script src="js/input.js?v=22"></script>
+<script src="js/main.js?v=22"></script>
 </body>
 </html>

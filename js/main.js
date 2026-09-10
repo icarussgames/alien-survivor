@@ -5,10 +5,10 @@ const ctx = canvas.getContext('2d');
 
 function setScreen(name) {
   screen = name;
-  ['menu','over','level','stage','shop','gal','lib','itemMode','hud','bar','pad'].forEach(function(n){
+  ['menu','over','level','stage','shop','gal','lib','itemMode','chrome','pad'].forEach(function(n){
     const el = document.getElementById(n);
     if (!el) return;
-    const show = n === name || (name === 'play' && (n === 'hud' || n === 'bar' || n === 'pad'));
+    const show = n === name || (name === 'play' && (n === 'chrome' || n === 'pad'));
     el.classList.toggle('hidden', !show);
   });
 }
@@ -33,6 +33,27 @@ function hud() {
   const stats = document.getElementById('stats');
   if (stats) stats.textContent = 'SPD ' + RUN.spd + '  DEF ' + RUN.def + '  ATK ' + RUN.atk + '  MAG ' + RUN.mag;
   document.getElementById('xp').style.width = Math.min(100, (xp / xpNeed) * 100) + '%';
+  const bossHud = document.getElementById('bossHud');
+  const bossFill = document.getElementById('bossHp');
+  let boss = null;
+  for (let i = 0; i < enemies.length; i++) {
+    if (enemies[i].kind === 'boss') { boss = enemies[i]; break; }
+  }
+  if (bossHud && bossFill) {
+    if (boss) {
+      bossHud.classList.remove('hidden');
+      const bars = Math.max(1, boss.bars || 1);
+      const per = boss.max / bars;
+      const leftLayers = Math.max(1, Math.ceil(boss.hp / per - 1e-6));
+      const fill = Math.max(0, Math.min(1, (boss.hp - (leftLayers - 1) * per) / per));
+      bossFill.style.width = (fill * 100) + '%';
+      let color = '#ff3366';
+      if (leftLayers > 1) color = (bars >= 3 && leftLayers === 2) ? '#c084fc' : '#ffcc66';
+      bossFill.style.background = color;
+    } else {
+      bossHud.classList.add('hidden');
+    }
+  }
   refreshItems();
   if (bannerT > 0) bannerT -= 0.016;
   else document.getElementById('banner').classList.add('hidden');
@@ -79,7 +100,7 @@ function shootAt(target) {
 function nearest() {
   let best = null, bd = 1e9;
   enemies.forEach(function(e){
-    if (e.kind === 'rock') return;
+    if (e.kind === 'rock' || e.kind === 'mid') return;
     const d = (e.x - player.x) ** 2 + (e.y - player.y) ** 2;
     if (d < bd) { bd = d; best = e; }
   });
@@ -278,6 +299,7 @@ function update(dt) {
     o.x = player.x + Math.cos(o.a + i) * 36;
     o.y = player.y + Math.sin(o.a + i) * 36;
     enemies.slice().forEach(function(e){
+      if (e.kind === 'rock' || e.kind === 'mid') return;
       if ((e.orbT||0) > 0) return;
       if (Math.hypot(e.x - o.x, e.y - o.y) < e.r + 8) {
         e.orbT = 0.4;
@@ -457,7 +479,7 @@ function draw() {
       ctx.fill();
       ctx.globalAlpha = 1;
     }
-    ctx.font = (e.kind === 'boss' ? 46 : (e.kind === 'rock' ? 38 : 26)) + 'px sans-serif';
+    ctx.font = (e.kind === 'boss' ? 46 : (e.kind === 'rock' ? 38 : (e.kind === 'mid' ? 34 : 26))) + 'px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(enemyFace(e), e.x, e.y + 1);
@@ -467,27 +489,22 @@ function draw() {
       ctx.arc(e.x, e.y, e.r * 0.7, 0, Math.PI * 2);
       ctx.fill();
     }
-    if (e.kind !== 'rock') {
-      const bars = Math.max(1, e.bars || 1);
-      const w = Math.max(12, e.r * 2);
-      let fill = 1;
-      let color = '#ff3366';
-      if (e.kind === 'mid') {
-        const fm = e.fuseMax || 15;
-        fill = Math.max(0.04, Math.min(1, (e.fuse == null ? fm : e.fuse) / fm));
-        color = '#ffaa44';
-      } else {
-        const per = e.max / bars;
-        const leftLayers = Math.max(1, Math.ceil(e.hp / per - 1e-6));
-        fill = Math.max(0, Math.min(1, (e.hp - (leftLayers - 1) * per) / per));
-        if (leftLayers > 1) {
-          color = (bars >= 3 && leftLayers === 2) ? '#c084fc' : '#ffcc66';
-        }
-      }
-      ctx.fillStyle = 'rgba(0,0,0,.45)';
-      ctx.fillRect(e.x - w / 2, e.y - e.r - 10, w, 5);
-      ctx.fillStyle = color;
-      ctx.fillRect(e.x - w / 2, e.y - e.r - 10, w * fill, 5);
+    if (e.kind === 'mid') {
+      const fm = e.fuseMax || 15;
+      const fill = Math.max(0.04, Math.min(1, (e.fuse == null ? fm : e.fuse) / fm));
+      const left = e.fuse == null ? fm : e.fuse;
+      const rate = left > 4 ? 2.2 : (left > 1.2 ? 7 : 18);
+      const blink = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin((aliveTime || 0) * rate * Math.PI * 2));
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, e.r + 10, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,140,40,' + (0.35 + 0.45 * blink) + ')';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, e.r + 10, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * fill);
+      ctx.strokeStyle = 'rgba(255,200,80,' + (0.7 + 0.3 * blink) + ')';
+      ctx.lineWidth = 4;
+      ctx.stroke();
     }
   });
   enemyShots.forEach(function(s){

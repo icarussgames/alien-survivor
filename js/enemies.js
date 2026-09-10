@@ -92,7 +92,7 @@ function spawnMidBoss() {
   if (edge === 3) { x = -22; y = Math.random() * H; }
   const sc = enemyScale();
   enemies.push({
-    x:x, y:y, r:12, hp:1, max:1, bars:1,
+    x:x, y:y, r:16, hp:1, max:1, bars:1,
     spd: 30 * sc.spd * ENEMY_SPD_MUL, kind:'mid', shoot:0, flash:0, whip:0, tell:0,
     tellColor:'#ff8844', explodeR:70, fuse:15, fuseMax:15
   });
@@ -121,7 +121,8 @@ function maybeMidBoss() {
   const m = Math.floor(aliveTime / 60);
   if (m < 1 || m <= lastMidTier) return;
   lastMidTier = m;
-  if (m % 3 === 0) return;
+  // Skip the 3-minute boss ticks, and never overlap a live boss.
+  if (bossLive || m % 3 === 0) return;
   spawnMidBoss();
 }
 
@@ -252,6 +253,11 @@ function hitEnemy(e, dmg) {
     flashAt(e.x, e.y, e.r + 4, 'rgba(180,180,180,.5)');
     return;
   }
+  // Seeker bomb: shots/orbs don't delete it — fuse, contact, or player bomb does.
+  if (e.kind === 'mid') {
+    flashAt(e.x, e.y, e.r + 6, 'rgba(255,160,60,.7)');
+    return;
+  }
   e.hp -= dmg;
   e.flash = 0.12;
   flashAt(e.x, e.y, e.r + 6, 'rgba(255,255,255,.9)');
@@ -323,6 +329,10 @@ function bossBlast(x, y) {
 function ramEnemy(e) {
   if (!e || e.ramCd > 0) return;
   e.ramCd = 0.22;
+  if (e.kind === 'mid') {
+    midExplode(e);
+    return;
+  }
   hitEnemy(e, e.kind === 'boss' ? dmgNow() : Math.max(e.hp, 1));
   flashAt(e.x, e.y, 16, 'rgba(255,210,60,.9)');
 }
@@ -342,7 +352,9 @@ function boom(x, y) {
   const reach = 260;
   boomRings.push({ x:x, y:y, reach:reach, life:0.42, max:0.42 });
   enemies.slice().forEach(function(en){
-    if (Math.hypot(en.x - x, en.y - y) < reach) hitEnemy(en, boomDmg);
+    if (Math.hypot(en.x - x, en.y - y) >= reach) return;
+    if (en.kind === 'mid') midExplode(en);
+    else hitEnemy(en, boomDmg);
   });
   for (let i = 0; i < 16; i++) {
     particles.push({ x:x, y:y, vx:(Math.random()-0.5)*320, vy:(Math.random()-0.5)*320, life:0.55, c:'#ff8844', s:6 });
