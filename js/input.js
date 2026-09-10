@@ -160,7 +160,7 @@ function toggleFullscreen() {
 function syncFsLabel() {
   const on = isFullscreen();
   const menu = document.getElementById('fullBtn');
-  if (menu) menu.textContent = on ? 'SALIR DE PANTALLA' : 'PANTALLA COMPLETA';
+  if (menu) menu.textContent = on ? 'EXIT FULLSCREEN' : 'FULLSCREEN';
   const icon = document.getElementById('fsBtn');
   if (icon) icon.textContent = on ? '⤢' : '⛶';
 }

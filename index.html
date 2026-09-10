@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Alien Survivor</title>
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=20">
 </head>
 <body>
 <div id="wrap">
@@ -19,73 +19,73 @@
 
   <div id="menu" class="overlay">
     <h1>Alien Survivor</h1>
-    <p>El disparo es automático. En el celular usa el stick. Las curas y bombas se guardan y se usan después. Un jefe cada 3 minutos.</p>
-    <button class="btn" id="startBtn">EMPEZAR</button>
-    <button class="btn ghost" id="fullBtn" type="button">PANTALLA COMPLETA</button>
+    <p>Auto-fire. On phone use the stick. Heals and bombs go to inventory. A boss every 3 minutes.</p>
+    <button class="btn" id="startBtn">START</button>
+    <button class="btn ghost" id="fullBtn" type="button">FULLSCREEN</button>
     <div>
-      <button class="btn ghost" id="shopBtn">MEJORAS</button>
-      <button class="btn ghost" id="galBtn">GALERÍA</button>
+      <button class="btn ghost" id="shopBtn">UPGRADES</button>
+      <button class="btn ghost" id="galBtn">GALLERY</button>
     </div>
     <div>
-      <button class="btn ghost" id="packBtn" type="button">CARGAR PACK.ZIP</button>
-      <a class="btn ghost" href="pack.zip" download="pack.zip">PACK DE MUESTRA</a>
+      <button class="btn ghost" id="packBtn" type="button">LOAD PACK.ZIP</button>
+      <a class="btn ghost" href="pack.zip" download="pack.zip">SAMPLE PACK</a>
     </div>
-    <div class="tips">WASD o flechas. Q cura, E bomba. El techo de daño y cadencia sube cada 3 minutos.</div>
+    <div class="tips">WASD or arrows. Q heal, E bomb. Damage and fire-rate caps rise every 3 minutes.</div>
   </div>
 
   <div id="over" class="overlay hidden">
-    <h1 style="-webkit-text-fill-color:#ff3366;color:#ff3366">Caíste</h1>
-    <p>Tiempo: <b id="fTime" class="cyan">0:00</b><br>Gemas de la partida: <span id="fRun" class="mag">0</span><br>Gemas totales: <span id="fLife" class="mag">0</span></p>
-    <button class="btn" id="retryBtn">REINTENTAR</button>
+    <h1 style="-webkit-text-fill-color:#ff3366;color:#ff3366">You fell</h1>
+    <p>Time: <b id="fTime" class="cyan">0:00</b><br>Run gems: <span id="fRun" class="mag">0</span><br>Total gems: <span id="fLife" class="mag">0</span></p>
+    <button class="btn" id="retryBtn">RETRY</button>
     <div>
-      <button class="btn ghost" id="shopBtn2">MEJORAS</button>
-      <button class="btn ghost" id="galBtn2">GALERÍA</button>
+      <button class="btn ghost" id="shopBtn2">UPGRADES</button>
+      <button class="btn ghost" id="galBtn2">GALLERY</button>
     </div>
   </div>
 
   <div id="stage" class="overlay hidden">
-    <h1>Etapa 1</h1>
-    <p>El jefe cayó. Las gemas ya están guardadas. Vuelve al menú para comprar mejoras y fotos.</p>
-    <p>Gemas: <span id="stageGems" class="mag">0</span></p>
-    <button class="btn" id="stageMenu" type="button">AL MENÚ</button>
+    <h1>Stage 1</h1>
+    <p>Boss down. Gems are saved. Back to the menu for upgrades and photos.</p>
+    <p>Gems: <span id="stageGems" class="mag">0</span></p>
+    <button class="btn" id="stageMenu" type="button">TO MENU</button>
   </div>
 
   <div id="level" class="overlay hidden">
-    <h1>Nivel</h1>
-    <p>Elige una stat para esta partida.</p>
+    <h1>Level up</h1>
+    <p>Pick a stat for this run.</p>
     <div id="picks"></div>
   </div>
 
   <div id="shop" class="overlay hidden">
-    <h1>Mejoras</h1>
-    <p>Gemas: <span id="shopGems" class="mag">0</span></p>
+    <h1>Upgrades</h1>
+    <p>Gems: <span id="shopGems" class="mag">0</span></p>
     <div class="scroll" id="shopList"></div>
-    <button class="btn ghost" id="shopBack">VOLVER</button>
-    <button class="btn ghost" id="wipe" style="font-size:.8rem;padding:6px 14px">Borrar progreso</button>
+    <button class="btn ghost" id="shopBack">BACK</button>
+    <button class="btn ghost" id="wipe" style="font-size:.8rem;padding:6px 14px">Clear progress</button>
   </div>
 
   <div id="gal" class="overlay hidden">
-    <h1>Galería</h1>
-    <p id="galHint">Gemas: 0</p>
+    <h1>Gallery</h1>
+    <p id="galHint">Gems: 0</p>
     <div class="gal-tabs" id="galTabs"></div>
     <div class="gal-shop" id="galShop"></div>
     <div>
-      <button class="btn ghost" id="packBtn2" type="button">CARGAR PACK.ZIP</button>
-      <a class="btn ghost" href="pack.zip" download="pack.zip">PACK DE MUESTRA</a>
-      <button class="btn ghost" id="packClear" type="button">QUITAR PACK</button>
+      <button class="btn ghost" id="packBtn2" type="button">LOAD PACK.ZIP</button>
+      <a class="btn ghost" href="pack.zip" download="pack.zip">SAMPLE PACK</a>
+      <button class="btn ghost" id="packClear" type="button">REMOVE PACK</button>
     </div>
-    <button class="btn ghost" id="galBack">VOLVER</button>
+    <button class="btn ghost" id="galBack">BACK</button>
     <input type="file" id="packFile" accept=".zip,application/zip" hidden>
   </div>
   <div id="lib" class="overlay hidden">
     <h1>Sets</h1>
-    <p>Gemas: <span id="libGems" class="mag">0</span></p>
+    <p>Gems: <span id="libGems" class="mag">0</span></p>
     <div class="lib-grid" id="libGrid"></div>
-    <button class="btn ghost" id="libBack">VOLVER</button>
+    <button class="btn ghost" id="libBack">BACK</button>
   </div>
   <div id="fs" class="hidden"><img id="fsImg" alt=""></div>
 </div>
-<button id="fsBtn" type="button" aria-label="Pantalla completa">⛶</button>
+<button id="fsBtn" type="button" aria-label="Fullscreen">⛶</button>
 <div id="pad" class="hidden">
   <div id="stick"><div id="knob"></div></div>
   <div class="side">
@@ -97,17 +97,17 @@
     <div id="stats">SPD 0  DEF 0  ATK 0  MAG 0</div>
   </div>
 </div>
-<script src="js/data.js"></script>
-<script src="js/state.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/levels.js"></script>
-<script src="js/player.js"></script>
-<script src="js/items.js"></script>
-<script src="js/waves.js"></script>
-<script src="js/enemies.js"></script>
-<script src="js/economy.js"></script>
-<script src="js/gallery.js"></script>
-<script src="js/input.js"></script>
-<script src="js/main.js"></script>
+<script src="js/data.js?v=20"></script>
+<script src="js/state.js?v=20"></script>
+<script src="js/audio.js?v=20"></script>
+<script src="js/levels.js?v=20"></script>
+<script src="js/player.js?v=20"></script>
+<script src="js/items.js?v=20"></script>
+<script src="js/waves.js?v=20"></script>
+<script src="js/enemies.js?v=20"></script>
+<script src="js/economy.js?v=20"></script>
+<script src="js/gallery.js?v=20"></script>
+<script src="js/input.js?v=20"></script>
+<script src="js/main.js?v=20"></script>
 </body>
 </html>

@@ -1,17 +1,18 @@
-// ==================== ITEMS CONSUMIBLES ====================
-// Curas y bombas se guardan y se usan con el panel, no al recogerlas.
+// ==================== CONSUMABLE ITEMS ====================
+// Heals and bombs go to inventory and are used from the pad.
 
-const ITEM_MAX = 4;
+function healCap() { return 3 + (owned('capCura')|0); }
+function bombCap() { return 3 + (owned('capBomba')|0); }
 
 function addItem(kind) {
   if (!player) return false;
   if (kind === 'heal') {
-    if (player.heal >= ITEM_MAX) return false;
+    if (player.heal >= healCap()) return false;
     player.heal++;
     return true;
   }
   if (kind === 'bomb') {
-    if (player.bombs >= ITEM_MAX) return false;
+    if (player.bombs >= bombCap()) return false;
     player.bombs++;
     return true;
   }
@@ -72,6 +73,7 @@ function autoUseItems() {
   if (!autoItemsOn || !player || screen !== 'play') return;
   while (player.hp < 50 && player.heal > 0 && player.hp < player.maxHp) useHeal();
   const near = enemies.filter(function(e) {
+    if (e.kind === 'rock') return false;
     return Math.hypot(e.x - player.x, e.y - player.y) < WHIP_REACH;
   }).length;
   if (near < 6) bombReady = true;

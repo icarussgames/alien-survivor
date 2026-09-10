@@ -6,6 +6,8 @@ var bossLive = false;
 var lastBossTier = -1;
 var boomRings = [];
 var bossesDown = 0;
+var lastMidTier = 0;
+var rockT = 0;
 var WHIP_REACH = 64;
 
 function resetEnemies() {
@@ -13,12 +15,16 @@ function resetEnemies() {
   enemyShots = [];
   bossLive = false;
   lastBossTier = -1;
+  lastMidTier = 0;
+  rockT = 2.5;
   boomRings = [];
   bossesDown = 0;
 }
 
 function enemyFace(e) {
   if (e.kind === 'boss') return '👿';
+  if (e.kind === 'mid') return '💣';
+  if (e.kind === 'rock') return '🪨';
   if (e.kind === 'shooter') return '🛸';
   if (e.kind === 'whip') return '⚡';
   return '👽';
@@ -72,8 +78,57 @@ function spawnBoss() {
     kit: first, move: 'shot', phase: 'cool', reward: bossesDown
   });
   bossLive = true;
-  banner(first ? 'JEFE · disparo y látigo' : 'JEFE');
+  banner(first ? 'BOSS · shots and whip' : 'BOSS');
   beep(90, 0.28, 'sawtooth', 0.07);
+}
+
+function spawnMidBoss() {
+  const edge = Math.floor(Math.random() * 4);
+  let x = 0, y = 0;
+  if (edge === 0) { x = Math.random() * W; y = -22; }
+  if (edge === 1) { x = W + 22; y = Math.random() * H; }
+  if (edge === 2) { x = Math.random() * W; y = H + 22; }
+  if (edge === 3) { x = -22; y = Math.random() * H; }
+  const sc = enemyScale();
+  enemies.push({
+    x:x, y:y, r:12, hp:1, max:1, bars:1,
+    spd: 30 * sc.spd, kind:'mid', shoot:0, flash:0, whip:0, tell:0,
+    tellColor:'#ff8844', explodeR:70, fuse:15, fuseMax:15
+  });
+  banner('BOMB');
+  beep(120, 0.18, 'sawtooth', 0.06);
+}
+
+function spawnAsteroid() {
+  const edge = Math.floor(Math.random() * 4);
+  let x = 0, y = 0;
+  if (edge === 0) { x = Math.random() * W; y = -24; }
+  if (edge === 1) { x = W + 24; y = Math.random() * H; }
+  if (edge === 2) { x = Math.random() * W; y = H + 24; }
+  if (edge === 3) { x = -24; y = Math.random() * H; }
+  const a = Math.atan2(H / 2 - y, W / 2 - x) + (Math.random() - 0.5) * 0.5;
+  const spd = 28 + Math.random() * 22;
+  enemies.push({
+    x:x, y:y, r:16 + Math.random() * 8,
+    hp:99, max:99, bars:1, spd:spd, kind:'rock', block:true, solid:true,
+    vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
+    shoot:0, flash:0, whip:0, tell:0, spin: (Math.random() - 0.5) * 2
+  });
+}
+
+function maybeMidBoss() {
+  const m = Math.floor(aliveTime / 60);
+  if (m < 1 || m <= lastMidTier) return;
+  lastMidTier = m;
+  if (m % 3 === 0) return;
+  spawnMidBoss();
+}
+
+function maybeAsteroid(dt) {
+  rockT -= dt;
+  if (rockT > 0) return;
+  rockT = (7 + Math.random() * 6) / 0.7;
+  if (Math.random() < 0.55 * 0.7) spawnAsteroid();
 }
 
 function maybeBoss() {
@@ -82,6 +137,25 @@ function maybeBoss() {
     lastBossTier = t;
     spawnBoss();
   }
+}
+
+function midExplode(e) {
+  const reach = e.explodeR || 70;
+  boomRings.push({ x:e.x, y:e.y, reach:reach, life:0.42, max:0.42 });
+  if (player && Math.hypot(player.x - e.x, player.y - e.y) < reach + player.r) {
+    if (!(player.star > 0)) hurt(40);
+  }
+  enemies.slice().forEach(function(o) {
+    if (o === e || o.kind === 'rock' || o.kind === 'boss') return;
+    if (Math.hypot(o.x - e.x, o.y - e.y) < reach + o.r) hitEnemy(o, Math.max(o.hp, 1));
+  });
+  flashAt(e.x, e.y, 34, 'rgba(255,120,40,.95)');
+  for (let i = 0; i < 14; i++) {
+    particles.push({ x:e.x, y:e.y, vx:(Math.random()-0.5)*260, vy:(Math.random()-0.5)*260, life:0.45, c:'#ff8844', s:5 });
+  }
+  beep(90, 0.16, 'sawtooth', 0.07);
+  const i = enemies.indexOf(e);
+  if (i >= 0) enemies.splice(i, 1);
 }
 
 function enemyFire(e, spread) {
@@ -104,19 +178,44 @@ function enemyFire(e, spread) {
 
 function updateEnemies(dt) {
   maybeBoss();
+  maybeMidBoss();
+  maybeAsteroid(dt);
   enemies.slice().forEach(function(e){
     const dx = player.x - e.x, dy = player.y - e.y;
     const dist = Math.hypot(dx, dy) || 1;
-    let want = e.spd;
-    if (e.kind === 'shooter' && dist < 170) want = dist < 120 ? -e.spd * 0.4 : 0;
-    if (e.kind === 'boss' && dist < 140) want = 0;
-    if (e.kind === 'whip' && dist < WHIP_REACH - 14) want = 0;
-    e.x += (dx / dist) * want * dt;
-    e.y += (dy / dist) * want * dt;
     e.shoot -= dt;
     e.flash = Math.max(0, (e.flash||0) - dt);
     e.whip = Math.max(0, (e.whip||0) - dt);
     e.ramCd = Math.max(0, (e.ramCd||0) - dt);
+
+    if (e.kind === 'rock') {
+      e.x += (e.vx || 0) * dt;
+      e.y += (e.vy || 0) * dt;
+      if (e.x < -40 || e.x > W + 40 || e.y < -40 || e.y > H + 40) {
+        const i = enemies.indexOf(e);
+        if (i >= 0) enemies.splice(i, 1);
+      }
+      if (Math.hypot(e.x - player.x, e.y - player.y) < e.r + player.r - 2) {
+        if (player.star > 0) ramEnemy(e);
+        else hurt(14);
+      }
+      return;
+    }
+
+    let want = e.spd;
+    if (e.kind === 'shooter' && dist < 170) want = dist < 120 ? -e.spd * 0.4 : 0;
+    if (e.kind === 'boss' && dist < 140) want = 0;
+    if (e.kind === 'whip' && dist < WHIP_REACH - 14) want = 0;
+    if (e.kind === 'mid') {
+      e.fuse = (e.fuse == null ? 15 : e.fuse) - dt;
+      const near = dist < e.r + player.r + 2;
+      if (e.fuse <= 0 || near) {
+        midExplode(e);
+        return;
+      }
+    }
+    e.x += (dx / dist) * want * dt;
+    e.y += (dy / dist) * want * dt;
     if (e.kind === 'shooter' && e.shoot <= 0 && dist < 280) {
       e.shoot = 1.55;
       enemyFire(e, 1);
@@ -127,7 +226,7 @@ function updateEnemies(dt) {
       e.whip = 0.16;
       if (!(player.star > 0)) hurt(20);
     }
-    if (e.kind !== 'whip' && Math.hypot(e.x - player.x, e.y - player.y) < e.r + player.r - 2) {
+    if (e.kind !== 'whip' && e.kind !== 'mid' && Math.hypot(e.x - player.x, e.y - player.y) < e.r + player.r - 2) {
       if (player.star > 0) ramEnemy(e);
       else hurt(e.kind === 'boss' ? 20 : 10);
     }
@@ -148,6 +247,10 @@ function updateEnemies(dt) {
 }
 
 function hitEnemy(e, dmg) {
+  if (e.kind === 'rock' || e.solid) {
+    flashAt(e.x, e.y, e.r + 4, 'rgba(180,180,180,.5)');
+    return;
+  }
   e.hp -= dmg;
   e.flash = 0.12;
   flashAt(e.x, e.y, e.r + 6, 'rgba(255,255,255,.9)');
@@ -171,11 +274,15 @@ function hitEnemy(e, dmg) {
         gems.push({ kind:reward.kind, special:true, x:e.x, y:e.y, v:0, r:10 });
       }
       afterBossWaves();
-      banner(reward ? reward.label : 'Oleadas');
+      banner(reward ? reward.label : 'Waves');
       for (let i = 0; i < 4; i++) gems.push({ kind:'gem', x:e.x + (Math.random()-0.5)*24, y:e.y, v:1, r:7 });
     }
-  } else if (Math.random() < 0.88) {
+  } else if (e.kind === 'rock') {
+    /* rubble only */
+  } else if (e.kind !== 'mid' && Math.random() < 0.88) {
     gems.push(rollDrop(e.x, e.y));
+  } else if (e.kind === 'mid') {
+    for (let i = 0; i < 2; i++) gems.push({ kind:'gem', x:e.x + (Math.random()-0.5)*16, y:e.y, v:1, r:6 });
   }
   enemies.splice(enemies.indexOf(e), 1);
 }

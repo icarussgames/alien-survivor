@@ -79,6 +79,7 @@ function shootAt(target) {
 function nearest() {
   let best = null, bd = 1e9;
   enemies.forEach(function(e){
+    if (e.kind === 'rock') return;
     const d = (e.x - player.x) ** 2 + (e.y - player.y) ** 2;
     if (d < bd) { bd = d; best = e; }
   });
@@ -108,10 +109,10 @@ function confirmLevelPick() {
 
 function offerLevel() {
   const picks = [
-    { id:'spd', name:'+Speed', desc:'Más rápido al moverte y al disparar. ' + nextStatLine('spd') },
-    { id:'def', name:'+Def', desc:'Menos daño recibido. ' + nextStatLine('def') },
-    { id:'atk', name:'+Atk', desc:'Más daño a enemigos. ' + nextStatLine('atk') },
-    { id:'mag', name:'+Mag', desc:'Más radio para juntar gemas. ' + nextStatLine('mag') }
+    { id:'spd', name:'+Speed', desc:'Move and fire faster. ' + nextStatLine('spd') },
+    { id:'def', name:'+Def', desc:'Take less damage. ' + nextStatLine('def') },
+    { id:'atk', name:'+Atk', desc:'Deal more damage. ' + nextStatLine('atk') },
+    { id:'mag', name:'+Mag', desc:'Wider gem pickup radius. ' + nextStatLine('mag') }
   ];
   const box = document.getElementById('picks');
   box.innerHTML = '';
@@ -139,7 +140,7 @@ function startRun() {
     x:300, y:300, r:14, hp:maxHp(), maxHp:maxHp(),
     ang:0, ifr:0, shoot:0.25, cone:0.5,
     mods:{ dmg:0, rate:0, mag:0, spread:0 },
-    heal:0, bombs:0, hitFlash:0, healFlash:0, star:0
+    heal: owned('cura0')|0, bombs: owned('bomba0')|0, hitFlash:0, healFlash:0, star:0
   };
   flashes = [];
   gems = []; shots = []; particles = []; exhaust = []; orbs = [];
@@ -176,7 +177,7 @@ function beginStageClear(x, y) {
   }
   hyper = 1;
   stageClear = 2.4;
-  banner('ETAPA 1');
+  banner('STAGE 1');
   beep(70, 0.35, 'sawtooth', 0.08);
 }
 
@@ -454,19 +455,28 @@ function draw() {
       ctx.arc(e.x, e.y, e.r * 0.7, 0, Math.PI * 2);
       ctx.fill();
     }
-    const bars = Math.max(1, e.bars || 1);
-    const w = Math.max(12, e.r * 2);
-    const per = e.max / bars;
-    const leftLayers = Math.max(1, Math.ceil(e.hp / per - 1e-6));
-    const fill = Math.max(0, Math.min(1, (e.hp - (leftLayers - 1) * per) / per));
-    let color = '#ff3366';
-    if (leftLayers > 1) {
-      color = (bars >= 3 && leftLayers === 2) ? '#c084fc' : '#ffcc66';
+    if (e.kind !== 'rock') {
+      const bars = Math.max(1, e.bars || 1);
+      const w = Math.max(12, e.r * 2);
+      let fill = 1;
+      let color = '#ff3366';
+      if (e.kind === 'mid') {
+        const fm = e.fuseMax || 15;
+        fill = Math.max(0.04, Math.min(1, (e.fuse == null ? fm : e.fuse) / fm));
+        color = '#ffaa44';
+      } else {
+        const per = e.max / bars;
+        const leftLayers = Math.max(1, Math.ceil(e.hp / per - 1e-6));
+        fill = Math.max(0, Math.min(1, (e.hp - (leftLayers - 1) * per) / per));
+        if (leftLayers > 1) {
+          color = (bars >= 3 && leftLayers === 2) ? '#c084fc' : '#ffcc66';
+        }
+      }
+      ctx.fillStyle = 'rgba(0,0,0,.45)';
+      ctx.fillRect(e.x - w / 2, e.y - e.r - 10, w, 5);
+      ctx.fillStyle = color;
+      ctx.fillRect(e.x - w / 2, e.y - e.r - 10, w * fill, 5);
     }
-    ctx.fillStyle = 'rgba(0,0,0,.45)';
-    ctx.fillRect(e.x - w / 2, e.y - e.r - 10, w, 5);
-    ctx.fillStyle = color;
-    ctx.fillRect(e.x - w / 2, e.y - e.r - 10, w * fill, 5);
   });
   enemyShots.forEach(function(s){
     ctx.fillStyle = '#ff4466';
