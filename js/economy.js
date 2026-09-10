@@ -61,8 +61,7 @@ function pullGems() {
 function collectPickup(g) {
   const kind = g.kind || 'gem';
   if (kind === 'heal' || kind === 'bomb') {
-    if (!addItem(kind)) return;
-    refreshItems();
+    if (!takeHealOrBomb(kind)) return;
     beep(500, 0.06, 'square', 0.04);
     return;
   }

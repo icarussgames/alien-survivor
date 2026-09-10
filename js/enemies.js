@@ -9,6 +9,7 @@ var bossesDown = 0;
 var lastMidTier = 0;
 var rockT = 0;
 var WHIP_REACH = 64;
+var ENEMY_SPD_MUL = 0.9;
 
 function resetEnemies() {
   enemies = [];
@@ -57,7 +58,7 @@ function spawnEnemy() {
   const mult = kind === 'whip' ? 1.2 : (kind === 'shooter' ? 1.8 : 1.6);
   const bars = enemyBars();
   const hp = mult * sc.hp * bars;
-  const spd = (kind === 'whip' ? 96 : (kind === 'shooter' ? 44 : 34)) * sc.spd;
+  const spd = (kind === 'whip' ? 96 : (kind === 'shooter' ? 44 : 34)) * sc.spd * ENEMY_SPD_MUL;
   enemies.push({
     x:x, y:y,
     r: kind === 'whip' ? 12 : (kind === 'shooter' ? 14 : 13),
@@ -73,7 +74,7 @@ function spawnBoss() {
   const hp = Math.round((first ? 110 : 32) * sc.hp * (1 + bossesDown * 0.45));
   enemies.push({
     x: W / 2, y: -30, r: 28, hp:hp, max:hp, bars: 1 + bossesDown,
-    spd: 34 * sc.spd, kind: 'boss', shoot: 0.8, dmg: 1.4 * sc.dmg, big: true,
+    spd: 34 * sc.spd * ENEMY_SPD_MUL, kind: 'boss', shoot: 0.8, dmg: 1.4 * sc.dmg, big: true,
     flash:0, whip:0, tell:0, tellColor:'#fff',
     kit: first, move: 'shot', phase: 'cool', reward: bossesDown
   });
@@ -92,7 +93,7 @@ function spawnMidBoss() {
   const sc = enemyScale();
   enemies.push({
     x:x, y:y, r:12, hp:1, max:1, bars:1,
-    spd: 30 * sc.spd, kind:'mid', shoot:0, flash:0, whip:0, tell:0,
+    spd: 30 * sc.spd * ENEMY_SPD_MUL, kind:'mid', shoot:0, flash:0, whip:0, tell:0,
     tellColor:'#ff8844', explodeR:70, fuse:15, fuseMax:15
   });
   banner('BOMB');
@@ -107,9 +108,9 @@ function spawnAsteroid() {
   if (edge === 2) { x = Math.random() * W; y = H + 24; }
   if (edge === 3) { x = -24; y = Math.random() * H; }
   const a = Math.atan2(H / 2 - y, W / 2 - x) + (Math.random() - 0.5) * 0.5;
-  const spd = 28 + Math.random() * 22;
+  const spd = (28 + Math.random() * 22) * ENEMY_SPD_MUL;
   enemies.push({
-    x:x, y:y, r:16 + Math.random() * 8,
+    x:x, y:y, r:(16 + Math.random() * 8) * 1.5,
     hp:99, max:99, bars:1, spd:spd, kind:'rock', block:true, solid:true,
     vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
     shoot:0, flash:0, whip:0, tell:0, spin: (Math.random() - 0.5) * 2

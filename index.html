@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Alien Survivor</title>
-<link rel="stylesheet" href="css/style.css?v=20">
+<link rel="stylesheet" href="css/style.css?v=21">
 </head>
 <body>
 <div id="wrap">
@@ -19,7 +19,7 @@
 
   <div id="menu" class="overlay">
     <h1>Alien Survivor</h1>
-    <p>Auto-fire. On phone use the stick. Heals and bombs go to inventory. A boss every 3 minutes.</p>
+    <p>Auto-fire. On phone use the stick. Pick an item mode when you start. A boss every 3 minutes.</p>
     <button class="btn" id="startBtn">START</button>
     <button class="btn ghost" id="fullBtn" type="button">FULLSCREEN</button>
     <div>
@@ -33,6 +33,18 @@
     <div class="tips">WASD or arrows. Q heal, E bomb. Damage and fire-rate caps rise every 3 minutes.</div>
   </div>
 
+
+  <div id="itemMode" class="overlay hidden">
+    <h1>Item mode</h1>
+    <p>How should heals and bombs work this run?</p>
+    <div id="itemModePicks" class="item-modes">
+      <button class="pick" id="modePickup" type="button"><b>Use on pickup</b><br><span style="color:#9499c7">Heals and bombs fire as soon as you grab them.</span></button>
+      <button class="pick" id="modeCritical" type="button"><b>Auto use at critical</b><br><span style="color:#9499c7">Stored in inventory. Auto-heal under 50 HP; auto-bomb when crowded.</span></button>
+      <button class="pick" id="modeManual" type="button"><b>Manual</b><br><span style="color:#9499c7">Stored in inventory. Use with Q / E or the pad buttons.</span></button>
+    </div>
+    <p class="tips">Magnet and star are always use on pickup.</p>
+    <button class="btn ghost" id="itemModeBack" type="button">BACK</button>
+  </div>
   <div id="over" class="overlay hidden">
     <h1 style="-webkit-text-fill-color:#ff3366;color:#ff3366">You fell</h1>
     <p>Time: <b id="fTime" class="cyan">0:00</b><br>Run gems: <span id="fRun" class="mag">0</span><br>Total gems: <span id="fLife" class="mag">0</span></p>
@@ -92,22 +104,21 @@
     <div class="items">
       <button id="useHeal" type="button">❤ <span id="healN">0</span></button>
       <button id="useBomb" type="button">💣 <span id="bombN">0</span></button>
-      <label class="auto" id="autoItem"><input type="checkbox" id="autoCheck"> Auto</label>
     </div>
     <div id="stats">SPD 0  DEF 0  ATK 0  MAG 0</div>
   </div>
 </div>
-<script src="js/data.js?v=20"></script>
-<script src="js/state.js?v=20"></script>
-<script src="js/audio.js?v=20"></script>
-<script src="js/levels.js?v=20"></script>
-<script src="js/player.js?v=20"></script>
-<script src="js/items.js?v=20"></script>
-<script src="js/waves.js?v=20"></script>
-<script src="js/enemies.js?v=20"></script>
-<script src="js/economy.js?v=20"></script>
-<script src="js/gallery.js?v=20"></script>
-<script src="js/input.js?v=20"></script>
-<script src="js/main.js?v=20"></script>
+<script src="js/data.js?v=21"></script>
+<script src="js/state.js?v=21"></script>
+<script src="js/audio.js?v=21"></script>
+<script src="js/levels.js?v=21"></script>
+<script src="js/player.js?v=21"></script>
+<script src="js/items.js?v=21"></script>
+<script src="js/waves.js?v=21"></script>
+<script src="js/enemies.js?v=21"></script>
+<script src="js/economy.js?v=21"></script>
+<script src="js/gallery.js?v=21"></script>
+<script src="js/input.js?v=21"></script>
+<script src="js/main.js?v=21"></script>
 </body>
 </html>

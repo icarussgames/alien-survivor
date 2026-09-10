@@ -5,7 +5,7 @@ const ctx = canvas.getContext('2d');
 
 function setScreen(name) {
   screen = name;
-  ['menu','over','level','stage','shop','gal','lib','hud','bar','pad'].forEach(function(n){
+  ['menu','over','level','stage','shop','gal','lib','itemMode','hud','bar','pad'].forEach(function(n){
     const el = document.getElementById(n);
     if (!el) return;
     const show = n === name || (name === 'play' && (n === 'hud' || n === 'bar' || n === 'pad'));
@@ -132,6 +132,18 @@ function offerLevel() {
 function applyPick(id) {
   bumpStat(id);
   setScreen('play');
+}
+
+function openItemMode() {
+  loadItemMode();
+  ['modePickup','modeCritical','modeManual'].forEach(function(id){
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('on', (id === 'modePickup' && itemMode === 'pickup') ||
+      (id === 'modeCritical' && itemMode === 'critical') ||
+      (id === 'modeManual' && itemMode === 'manual'));
+  });
+  setScreen('itemMode');
 }
 
 function startRun() {
@@ -445,7 +457,7 @@ function draw() {
       ctx.fill();
       ctx.globalAlpha = 1;
     }
-    ctx.font = (e.kind === 'boss' ? 46 : 26) + 'px sans-serif';
+    ctx.font = (e.kind === 'boss' ? 46 : (e.kind === 'rock' ? 38 : 26)) + 'px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(enemyFace(e), e.x, e.y + 1);
@@ -576,8 +588,12 @@ function boot() {
     starsBg.push({ x:Math.random()*W, y:Math.random()*H, s:Math.random()*1.8+0.4, v:Math.random()*12+6 });
   }
   bindInput();
-  document.getElementById('startBtn').onclick = startRun;
-  document.getElementById('retryBtn').onclick = startRun;
+  document.getElementById('startBtn').onclick = openItemMode;
+  document.getElementById('retryBtn').onclick = openItemMode;
+  document.getElementById('itemModeBack').onclick = function(){ setScreen('menu'); };
+  document.getElementById('modePickup').onclick = function(){ setItemMode('pickup'); startRun(); };
+  document.getElementById('modeCritical').onclick = function(){ setItemMode('critical'); startRun(); };
+  document.getElementById('modeManual').onclick = function(){ setItemMode('manual'); startRun(); };
   document.getElementById('shopBtn').onclick = openShop;
   document.getElementById('shopBtn2').onclick = openShop;
   document.getElementById('galBtn').onclick = openGal;
@@ -599,7 +615,6 @@ function boot() {
   window.addEventListener('resize', fitLayout);
   window.addEventListener('orientationchange', fitLayout);
   document.getElementById('wipe').onclick = function(){ freshSave(); openShop(); };
-  bindAutoCheck();
   const stageMenu = document.getElementById('stageMenu');
   if (stageMenu) stageMenu.onclick = exitStageToMenu;
   setScreen('menu');

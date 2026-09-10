@@ -1,8 +1,26 @@
 // ==================== CONSUMABLE ITEMS ====================
-// Heals and bombs go to inventory and are used from the pad.
+// Heals/bombs: mode-dependent. Magnet and star are always use-on-pickup.
 
 function healCap() { return 3 + (owned('capCura')|0); }
 function bombCap() { return 3 + (owned('capBomba')|0); }
+
+/** @type {'pickup'|'critical'|'manual'} */
+var itemMode = 'manual';
+var bombReady = true;
+
+function setItemMode(mode) {
+  if (mode === 'pickup' || mode === 'critical' || mode === 'manual') itemMode = mode;
+  else itemMode = 'manual';
+  try { localStorage.setItem('as_item_mode', itemMode); } catch (e) {}
+  bombReady = true;
+}
+
+function loadItemMode() {
+  try {
+    const m = localStorage.getItem('as_item_mode');
+    if (m === 'pickup' || m === 'critical' || m === 'manual') itemMode = m;
+  } catch (e) {}
+}
 
 function addItem(kind) {
   if (!player) return false;
@@ -37,6 +55,30 @@ function useBomb() {
   refreshItems();
 }
 
+function applyHealPickup() {
+  if (!player) return;
+  player.hp = Math.min(player.maxHp, player.hp + 40);
+  player.healFlash = 0.28;
+  flashAt(player.x, player.y, 22, 'rgba(80,255,160,.95)');
+  beep(640, 0.1, 'sine', 0.05);
+}
+
+function applyBombPickup() {
+  if (!player) return;
+  boom(player.x, player.y);
+}
+
+function takeHealOrBomb(kind) {
+  if (itemMode === 'pickup') {
+    if (kind === 'heal') applyHealPickup();
+    else applyBombPickup();
+    return true;
+  }
+  if (!addItem(kind)) return false;
+  refreshItems();
+  return true;
+}
+
 function refreshItems() {
   const h = document.getElementById('healN');
   const b = document.getElementById('bombN');
@@ -44,33 +86,8 @@ function refreshItems() {
   if (b) b.textContent = player ? player.bombs : 0;
 }
 
-var autoItemsOn = false;
-var bombReady = true;
-
-function bindAutoCheck() {
-  const el = document.getElementById('autoCheck');
-  const label = document.getElementById('autoItem');
-  if (!el) return;
-  autoItemsOn = localStorage.getItem('as_auto') === '1';
-  el.checked = autoItemsOn;
-  function saveAuto() {
-    autoItemsOn = !!el.checked;
-    localStorage.setItem('as_auto', autoItemsOn ? '1' : '0');
-    bombReady = true;
-  }
-  el.onchange = saveAuto;
-  if (label) {
-    label.addEventListener('pointerdown', function(ev) {
-      ev.preventDefault();
-      ev.stopPropagation();
-      el.checked = !el.checked;
-      saveAuto();
-    });
-  }
-}
-
 function autoUseItems() {
-  if (!autoItemsOn || !player || screen !== 'play') return;
+  if (itemMode !== 'critical' || !player || screen !== 'play') return;
   while (player.hp < 50 && player.heal > 0 && player.hp < player.maxHp) useHeal();
   const near = enemies.filter(function(e) {
     if (e.kind === 'rock') return false;

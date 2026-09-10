@@ -113,3 +113,7 @@ body.land .side {
 }
 body.land .items { flex-direction:column; }
 body.land #stats { text-align:center; max-width:72px; line-height:1.35; }
+
+  .item-modes { width:min(92%, 420px); display:flex; flex-direction:column; gap:8px; margin:10px 0 6px; }
+  .item-modes .pick { width:100%; text-align:left; }
+  .item-modes .pick.on { outline:2px solid #00ffff; }
