@@ -8,6 +8,7 @@ var boomRings = [];
 var bossesDown = 0;
 var lastMidTier = 0;
 var rockT = 0;
+var goldRockT = 0;
 var WHIP_REACH = 64;
 var ENEMY_SPD_MUL = 0.9;
 
@@ -18,6 +19,7 @@ function resetEnemies() {
   lastBossTier = -1;
   lastMidTier = 0;
   rockT = 2.5;
+  goldRockT = 12 + Math.random() * 10;
   boomRings = [];
   bossesDown = 0;
 }
@@ -100,7 +102,7 @@ function spawnMidBoss() {
   beep(120, 0.18, 'sawtooth', 0.06);
 }
 
-function spawnAsteroid() {
+function spawnAsteroid(gold) {
   const edge = Math.floor(Math.random() * 4);
   let x = 0, y = 0;
   if (edge === 0) { x = Math.random() * W; y = -24; }
@@ -108,20 +110,24 @@ function spawnAsteroid() {
   if (edge === 2) { x = Math.random() * W; y = H + 24; }
   if (edge === 3) { x = -24; y = Math.random() * H; }
   const a = Math.atan2(H / 2 - y, W / 2 - x) + (Math.random() - 0.5) * 0.5;
-  const spd = (28 + Math.random() * 22) * ENEMY_SPD_MUL;
+  const spd = (28 + Math.random() * 22) * ENEMY_SPD_MUL * (gold ? 1.15 : 1);
   const rockPts = [];
+  const scale = gold ? 0.55 : 1;
   for (let i = 0; i < 7; i++) {
     const ang = (i / 7) * Math.PI * 2;
-    const rr = 8 + Math.random() * 5;
+    const rr = (gold ? 5 : 8) + Math.random() * (gold ? 3 : 5);
     rockPts.push([Math.cos(ang) * rr, Math.sin(ang) * rr]);
   }
+  const hp = gold ? (10 + Math.floor(Math.random() * 6)) : 99;
   enemies.push({
-    x:x, y:y, r:(16 + Math.random() * 8) * 1.5,
-    hp:99, max:99, bars:1, spd:spd, kind:'rock', block:true, solid:true,
+    x:x, y:y, r:(16 + Math.random() * 8) * 1.5 * scale,
+    hp:hp, max:hp, bars:1, spd:spd, kind:'rock', block:true, solid:!gold,
+    gold:!!gold,
     vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
     shoot:0, flash:0, whip:0, tell:0, spin: (Math.random() - 0.5) * 2,
     rockPts: rockPts
   });
+  if (gold) banner('GOLD ASTEROID');
 }
 
 function maybeMidBoss() {
@@ -135,9 +141,15 @@ function maybeMidBoss() {
 
 function maybeAsteroid(dt) {
   rockT -= dt;
-  if (rockT > 0) return;
-  rockT = (7 + Math.random() * 6) / 0.7;
-  if (Math.random() < 0.55 * 0.7) spawnAsteroid();
+  if (rockT <= 0) {
+    rockT = (7 + Math.random() * 6) / 0.7;
+    if (Math.random() < 0.55 * 0.7) spawnAsteroid(false);
+  }
+  goldRockT -= dt;
+  if (goldRockT <= 0) {
+    goldRockT = 18 + Math.random() * 14;
+    spawnAsteroid(true);
+  }
 }
 
 function maybeBoss() {
@@ -257,7 +269,7 @@ function updateEnemies(dt) {
 }
 
 function hitEnemy(e, dmg) {
-  if (e.kind === 'rock' || e.solid) {
+  if ((e.kind === 'rock' || e.solid) && !e.gold) {
     flashAt(e.x, e.y, e.r + 4, 'rgba(180,180,180,.5)');
     return;
   }
@@ -292,6 +304,9 @@ function hitEnemy(e, dmg) {
       banner(reward ? reward.label : 'Waves');
       for (let i = 0; i < 4; i++) gems.push({ kind:'gem', x:e.x + (Math.random()-0.5)*24, y:e.y, v:1, r:7 });
     }
+  } else if (e.gold) {
+    gems.push({ kind:'star', x:e.x, y:e.y, v:0, r:8 });
+    banner('STAR CORE');
   } else if (e.kind === 'rock') {
     /* rubble only */
   } else if (e.kind !== 'mid' && Math.random() < 0.88) {
@@ -351,8 +366,7 @@ function rollDrop(x, y) {
   // Heal + bomb take most of the item band; magnet/star stay rarer.
   if (roll < rate * 1.35) return { kind:'heal', x:x, y:y, v:0, r:8 };
   if (roll < rate * 2.7) return { kind:'bomb', x:x, y:y, v:0, r:8 };
-  if (roll < rate * 3.2) return { kind:'magnet', x:x, y:y, v:0, r:8 };
-  if (roll < rate * 3.7) return { kind:'star', x:x, y:y, v:0, r:8 };
+  if (roll < rate * 3.4) return { kind:'magnet', x:x, y:y, v:0, r:8 };
   return { kind:'gem', x:x, y:y, v:1, r:6 };
 }
 

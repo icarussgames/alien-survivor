@@ -54,6 +54,17 @@ function hud() {
       bossHud.classList.add('hidden');
     }
   }
+  const starHud = document.getElementById('starHud');
+  const starFill = document.getElementById('starBar');
+  if (starHud && starFill) {
+    if (player && player.star > 0) {
+      starHud.classList.remove('hidden');
+      const max = player.starMax || 5;
+      starFill.style.width = Math.max(0, Math.min(100, (player.star / max) * 100)) + '%';
+    } else {
+      starHud.classList.add('hidden');
+    }
+  }
   refreshItems();
   if (bannerT > 0) bannerT -= 0.016;
   else document.getElementById('banner').classList.add('hidden');
@@ -90,18 +101,21 @@ function shootAt(target) {
   const a = Math.atan2(target.y - player.y, target.x - player.x);
   const twin = typeof buffLv === 'function' ? buffLv('twin') : 0;
   const fan = Math.max((player && player.mods && player.mods.spread) || 0, RUN.fan || 0);
-  let n = 1 + Math.min(2, fan) * 2 + twin;
-  n = Math.min(7, Math.max(1, n));
-  const step = n > 1 ? (n >= 5 ? 0.16 : 0.2) : 0.22;
-  const mid = (n - 1) / 2;
+  // Side pairs from fan/twin; always keep one bolt on the aim line.
+  const pairs = Math.min(3, Math.min(2, fan) + twin);
+  const step = pairs >= 3 ? 0.16 : 0.2;
   const pierce = typeof buffLv === 'function' ? buffLv('pierce') : 0;
-  for (let i = 0; i < n; i++) {
-    const aa = a + (i - mid) * step;
+  function fireBolt(aa) {
     shots.push({
       x:player.x, y:player.y, vx:Math.cos(aa)*280, vy:Math.sin(aa)*280,
       r:4, dmg:dmgNow(), life:1.2, c:'#00ffff',
       pierceLeft:pierce, hit:[]
     });
+  }
+  fireBolt(a);
+  for (let i = 1; i <= pairs; i++) {
+    fireBolt(a + i * step);
+    fireBolt(a - i * step);
   }
   unlock('shot');
   beep(480, 0.04, 'square', 0.03);
@@ -110,7 +124,7 @@ function shootAt(target) {
 function nearest() {
   let best = null, bd = 1e9;
   enemies.forEach(function(e){
-    if (e.kind === 'rock' || e.kind === 'mid') return;
+    if ((e.kind === 'rock' && !e.gold) || e.kind === 'mid') return;
     const d = (e.x - player.x) ** 2 + (e.y - player.y) ** 2;
     if (d < bd) { bd = d; best = e; }
   });
@@ -189,7 +203,7 @@ function startRun() {
     x:300, y:300, r:14, hp:maxHp(), maxHp:maxHp(),
     ang:0, ifr:0, shoot:0.25, cone:0.5,
     mods:{ dmg:0, rate:0, mag:0, spread:0 },
-    heal: owned('cura0')|0, bombs: owned('bomba0')|0, hitFlash:0, healFlash:0, star:0,
+    heal: owned('cura0')|0, bombs: owned('bomba0')|0, hitFlash:0, healFlash:0, star:0, starMax:5,
     shieldCharges:0, shieldMax:0, shieldRegen:0,
     pulseT:2.5, missileT:3.0, thornsT:0
   };
@@ -320,7 +334,7 @@ function update(dt) {
     o.x = player.x + Math.cos(o.a + i) * 36;
     o.y = player.y + Math.sin(o.a + i) * 36;
     enemies.slice().forEach(function(e){
-      if (e.kind === 'rock' || e.kind === 'mid') return;
+      if ((e.kind === 'rock' && !e.gold) || e.kind === 'mid') return;
       if ((e.orbT||0) > 0) return;
       if (Math.hypot(e.x - o.x, e.y - o.y) < e.r + 8) {
         e.orbT = 0.4;
@@ -335,7 +349,7 @@ function update(dt) {
       if (!t) {
         let best = null, bd = 1e9;
         enemies.forEach(function(e){
-          if (e.kind === 'rock' || e.kind === 'mid') return;
+          if ((e.kind === 'rock' && !e.gold) || e.kind === 'mid') return;
           const d = (e.x - s.x) ** 2 + (e.y - s.y) ** 2;
           if (d < bd) { bd = d; best = e; }
         });

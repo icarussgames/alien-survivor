@@ -70,7 +70,8 @@ function collectPickup(g) {
     return;
   }
   if (kind === 'star') {
-    player.star = 5;
+    player.starMax = 5;
+    player.star = player.starMax;
     banner('STAR');
     beep(740, 0.16, 'square', 0.06);
     return;
