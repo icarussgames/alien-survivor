@@ -78,14 +78,124 @@ function flashAt(x, y, r, color) {
   flashes.push({ x:x, y:y, r:r, life:0.16, color:color });
 }
 function hurt(n) {
-  if (!player || player.ifr > 0 || player.star > 0) return;
+  if (!player || player.dying || player.ifr > 0 || player.star > 0) return;
   if (typeof tryAbsorbShield === 'function' && tryAbsorbShield()) return;
   player.hp -= takenDmg(n);
   player.ifr = 0.6;
   player.hitFlash = 0.2;
   flashAt(player.x, player.y, 26, 'rgba(255,70,90,.95)');
   beep(140, 0.12, 'sawtooth', 0.06);
-  if (player.hp <= 0) endRun();
+  if (player.hp <= 0) {
+    player.hp = 0;
+    beginShipBreak();
+  }
+}
+
+var wreck = [];
+
+function beginShipBreak() {
+  if (!player || player.dying) return;
+  player.dying = true;
+  player.deathT = 1.05;
+  player.ifr = 99;
+  shots = [];
+  enemyShots = [];
+  const col = skin();
+  const px = player.x, py = player.y, ang = player.ang || 0;
+  wreck = [];
+  const pieces = [
+    { ox:1, oy:0, s:1.15, spin:2.2, kind:'hull' },
+    { ox:-2, oy:-10, s:0.95, spin:-3.4, kind:'wing' },
+    { ox:-2, oy:10, s:0.95, spin:3.1, kind:'wing' },
+    { ox:-8, oy:-4, s:0.7, spin:-5, kind:'scrap' },
+    { ox:-8, oy:4, s:0.7, spin:4.6, kind:'scrap' },
+    { ox:8, oy:0, s:0.55, spin:1.2, kind:'scrap' }
+  ];
+  pieces.forEach(function(pc, i){
+    const ca = Math.cos(ang), sa = Math.sin(ang);
+    const wx = px + pc.ox * ca - pc.oy * sa;
+    const wy = py + pc.ox * sa + pc.oy * ca;
+    const a = ang + (Math.random() - 0.5) * 1.2 + (i - 2.5) * 0.35;
+    const spd = 80 + Math.random() * 160;
+    wreck.push({
+      x:wx, y:wy, vx:Math.cos(a)*spd, vy:Math.sin(a)*spd,
+      ang:ang + Math.random(), spin:pc.spin + (Math.random()-0.5)*2,
+      life:player.deathT, max:player.deathT, s:pc.s,
+      a:col.a, b:col.b, kind:pc.kind
+    });
+  });
+  for (let i = 0; i < 28; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const spd = 40 + Math.random() * 220;
+    particles.push({
+      x:px, y:py,
+      vx:Math.cos(a)*spd, vy:Math.sin(a)*spd,
+      life:0.45 + Math.random()*0.55,
+      c: i % 3 ? col.a : '#ff6688',
+      s:2 + Math.random()*3
+    });
+  }
+  flashAt(px, py, 48, 'rgba(255,120,60,.9)');
+  beep(90, 0.28, 'sawtooth', 0.08);
+  beep(55, 0.4, 'triangle', 0.06);
+}
+
+function tickShipBreak(dt) {
+  if (!player || !player.dying) return;
+  player.deathT -= dt;
+  wreck.forEach(function(w){
+    w.x += w.vx * dt;
+    w.y += w.vy * dt;
+    w.vx *= 0.98;
+    w.vy *= 0.98;
+    w.ang += w.spin * dt;
+    w.life -= dt;
+  });
+  wreck = wreck.filter(function(w){ return w.life > 0; });
+  particles.forEach(function(p){ p.x += p.vx*dt; p.y += p.vy*dt; p.life -= dt; });
+  particles = particles.filter(function(p){ return p.life > 0; });
+  if (player.deathT <= 0) {
+    wreck = [];
+    player.dying = false;
+    endRun();
+  }
+}
+
+function drawWreck() {
+  wreck.forEach(function(w){
+    const k = Math.max(0, w.life / (w.max || 1));
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, k * 1.4);
+    ctx.translate(w.x, w.y);
+    ctx.rotate(w.ang);
+    ctx.scale(w.s, w.s);
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 1.5;
+    if (w.kind === 'wing') {
+      ctx.beginPath();
+      ctx.moveTo(10, 0);
+      ctx.lineTo(4, 6);
+      ctx.lineTo(-10, 4);
+      ctx.lineTo(-12, 12);
+      ctx.closePath();
+    } else if (w.kind === 'hull') {
+      ctx.beginPath();
+      ctx.arc(1, 0, 5.2, 0, Math.PI * 2);
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(6, -3);
+      ctx.lineTo(4, 5);
+      ctx.lineTo(-5, 4);
+      ctx.lineTo(-6, -4);
+      ctx.closePath();
+    }
+    ctx.fillStyle = w.b;
+    ctx.strokeStyle = w.a;
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  });
+  ctx.globalAlpha = 1;
 }
 
 function endRun() {
@@ -106,10 +216,12 @@ function shootAt(target) {
   const step = pairs >= 3 ? 0.16 : 0.2;
   const pierce = typeof buffLv === 'function' ? buffLv('pierce') : 0;
   function fireBolt(aa) {
+    const spd = 420;
+    const range = Math.max(W, H) * 1.15;
     shots.push({
-      x:player.x, y:player.y, vx:Math.cos(aa)*280, vy:Math.sin(aa)*280,
-      r:4, dmg:dmgNow(), life:1.2, c:'#00ffff',
-      pierceLeft:pierce, hit:[]
+      x:player.x, y:player.y, vx:Math.cos(aa)*spd, vy:Math.sin(aa)*spd,
+      r:3.5, dmg:dmgNow(), life:range / spd, c:'#00ffff',
+      pierceLeft:pierce, hit:[], shape:'line', len:14
     });
   }
   fireBolt(a);
@@ -207,7 +319,7 @@ function startRun() {
     shieldCharges:0, shieldMax:0, shieldRegen:0,
     pulseT:2.5, missileT:3.0, thornsT:0
   };
-  flashes = [];
+  flashes = []; wreck = [];
   gems = []; shots = []; particles = []; exhaust = []; orbs = [];
   if (typeof buffOrbs !== 'undefined') buffOrbs = [];
   if (typeof pulseRings !== 'undefined') pulseRings = [];
@@ -779,8 +891,27 @@ function draw() {
     ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
   });
   shots.forEach(function(s){
-    ctx.fillStyle = s.c;
-    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
+    if (s.shape === 'line') {
+      const ang = Math.atan2(s.vy, s.vx);
+      const half = (s.len || 14) * 0.5;
+      const c = Math.cos(ang), sn = Math.sin(ang);
+      ctx.strokeStyle = s.c;
+      ctx.lineWidth = 2.6;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(s.x - c * half, s.y - sn * half);
+      ctx.lineTo(s.x + c * half, s.y + sn * half);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(180,255,255,.55)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(s.x - c * half * 0.7, s.y - sn * half * 0.7);
+      ctx.lineTo(s.x + c * half * 0.7, s.y + sn * half * 0.7);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = s.c;
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
+    }
   });
   drawBoomRings();
   drawExhaust();
@@ -789,6 +920,9 @@ function draw() {
     ctx.beginPath(); ctx.arc(o.x, o.y, 7, 0, Math.PI*2); ctx.fill();
   });
   if (typeof drawBuffFx === 'function') drawBuffFx();
+  if (player && player.dying) {
+    drawWreck();
+  } else if (player) {
   const col = skin();
   ctx.save();
   if (player.star > 0) {
@@ -837,6 +971,7 @@ function draw() {
   }
   ctx.restore();
   ctx.globalAlpha = 1;
+  }
   particles.forEach(function(p){
     ctx.globalAlpha = Math.max(0, p.life * 2);
     ctx.fillStyle = p.c;
@@ -864,7 +999,10 @@ function loop(ts) {
   const now = ts / 1000;
   const dt = Math.min(0.033, lastTs ? now - lastTs : 0.016);
   lastTs = now;
-  if (screen === 'play' && player && player.hp > 0) update(dt);
+  if (screen === 'play' && player) {
+    if (player.dying) tickShipBreak(dt);
+    else if (player.hp > 0) update(dt);
+  }
   draw();
 }
 
