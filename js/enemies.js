@@ -109,11 +109,18 @@ function spawnAsteroid() {
   if (edge === 3) { x = -24; y = Math.random() * H; }
   const a = Math.atan2(H / 2 - y, W / 2 - x) + (Math.random() - 0.5) * 0.5;
   const spd = (28 + Math.random() * 22) * ENEMY_SPD_MUL;
+  const rockPts = [];
+  for (let i = 0; i < 7; i++) {
+    const ang = (i / 7) * Math.PI * 2;
+    const rr = 8 + Math.random() * 5;
+    rockPts.push([Math.cos(ang) * rr, Math.sin(ang) * rr]);
+  }
   enemies.push({
     x:x, y:y, r:(16 + Math.random() * 8) * 1.5,
     hp:99, max:99, bars:1, spd:spd, kind:'rock', block:true, solid:true,
     vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
-    shoot:0, flash:0, whip:0, tell:0, spin: (Math.random() - 0.5) * 2
+    shoot:0, flash:0, whip:0, tell:0, spin: (Math.random() - 0.5) * 2,
+    rockPts: rockPts
   });
 }
 
@@ -218,6 +225,7 @@ function updateEnemies(dt) {
     }
     e.x += (dx / dist) * want * dt;
     e.y += (dy / dist) * want * dt;
+    e.ang = Math.atan2(dy, dx);
     if (e.kind === 'shooter' && e.shoot <= 0 && dist < 280) {
       e.shoot = 1.55;
       enemyFire(e, 1);

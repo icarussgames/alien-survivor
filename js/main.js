@@ -486,6 +486,207 @@ function gradeFrame() {
   ctx.restore();
 }
 
+
+function enemyPalette(kind) {
+  if (kind === 'shooter') return { body:'#3a6ea5', edge:'#9fd4ff', glow:'#224466', accent:'#cfefff' };
+  if (kind === 'whip') return { body:'#a67c00', edge:'#ffe08a', glow:'#664400', accent:'#fff1a8' };
+  if (kind === 'boss') return { body:'#7a1028', edge:'#ff6688', glow:'#440014', accent:'#ff88aa' };
+  if (kind === 'mid') return { body:'#8a3a10', edge:'#ffaa55', glow:'#552200', accent:'#ffcc66' };
+  if (kind === 'rock') return { body:'#5a564e', edge:'#b0aaa0', glow:'#2a2820', accent:'#8a8478' };
+  return { body:'#1a5022', edge:'#7dff6a', glow:'#0a2810', accent:'#b6ff7a' };
+}
+
+function drawEnemyShip(e) {
+  const pal = enemyPalette(e.kind);
+  const s = Math.max(0.75, (e.r || 13) / 13);
+  let ang = e.ang;
+  if (ang == null) {
+    if (e.kind === 'rock') ang = (e.spin || 1) * (aliveTime || 0);
+    else if (player) ang = Math.atan2(player.y - e.y, player.x - e.x);
+    else ang = 0;
+  }
+  ctx.save();
+  ctx.translate(e.x, e.y);
+  ctx.rotate(ang);
+  ctx.scale(s, s);
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 1.5;
+
+  if (e.kind === 'rock') {
+    ctx.beginPath();
+    const pts = e.rockPts || [[10,0],[6,8],[-2,11],[-10,5],[-9,-6],[-1,-11],[8,-7]];
+    pts.forEach(function(p, i){ if (i === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]); });
+    ctx.closePath();
+    ctx.fillStyle = pal.body;
+    ctx.strokeStyle = pal.edge;
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-2, -3); ctx.lineTo(3, 1); ctx.lineTo(-1, 4);
+    ctx.strokeStyle = 'rgba(0,0,0,.35)';
+    ctx.stroke();
+  } else if (e.kind === 'mid') {
+    ctx.beginPath();
+    ctx.arc(0, 0, 10, 0, Math.PI * 2);
+    ctx.fillStyle = pal.body;
+    ctx.strokeStyle = pal.edge;
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(-3, -3, 3, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,220,120,.35)';
+    ctx.fill();
+    ctx.fillStyle = pal.accent;
+    ctx.fillRect(-2, -14, 4, 6);
+    ctx.strokeStyle = pal.edge;
+    ctx.strokeRect(-2, -14, 4, 6);
+  } else if (e.kind === 'normal') {
+    // Square hull + two cones each side (ship-like scout).
+    ctx.fillStyle = pal.body;
+    ctx.strokeStyle = pal.edge;
+    ctx.beginPath();
+    ctx.rect(-9, -9, 18, 18);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = pal.glow;
+    ctx.fillRect(-3, -4, 8, 8);
+    ctx.fillStyle = pal.accent;
+    ctx.fillRect(4, -3, 5, 6);
+    function sideCones(sign) {
+      [-5, 5].forEach(function(fx) {
+        ctx.beginPath();
+        ctx.moveTo(fx - 3, sign * 9);
+        ctx.lineTo(fx + 3, sign * 9);
+        ctx.lineTo(fx, sign * 17);
+        ctx.closePath();
+        ctx.fillStyle = pal.accent;
+        ctx.strokeStyle = pal.edge;
+        ctx.fill();
+        ctx.stroke();
+      });
+    }
+    sideCones(-1);
+    sideCones(1);
+    ctx.fillStyle = pal.edge;
+    ctx.fillRect(9, -3, 5, 6);
+  } else if (e.kind === 'shooter') {
+    ctx.fillStyle = pal.body;
+    ctx.strokeStyle = pal.edge;
+    ctx.beginPath();
+    ctx.rect(-11, -7, 20, 14);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, 0, 5, 0, Math.PI * 2);
+    ctx.fillStyle = pal.accent;
+    ctx.fill();
+    ctx.strokeStyle = pal.edge;
+    ctx.stroke();
+    ctx.fillStyle = pal.edge;
+    ctx.fillRect(8, -2.5, 10, 5);
+    [-1, 1].forEach(function(sign) {
+      ctx.beginPath();
+      ctx.moveTo(-4, sign * 7);
+      ctx.lineTo(-10, sign * 12);
+      ctx.lineTo(2, sign * 7);
+      ctx.closePath();
+      ctx.fillStyle = pal.body;
+      ctx.strokeStyle = pal.edge;
+      ctx.fill();
+      ctx.stroke();
+    });
+  } else if (e.kind === 'whip') {
+    ctx.fillStyle = pal.body;
+    ctx.strokeStyle = pal.edge;
+    ctx.beginPath();
+    ctx.moveTo(12, 0);
+    ctx.lineTo(2, 7);
+    ctx.lineTo(-10, 4);
+    ctx.lineTo(-8, 0);
+    ctx.lineTo(-10, -4);
+    ctx.lineTo(2, -7);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    [-1, 1].forEach(function(sign) {
+      ctx.beginPath();
+      ctx.moveTo(0, sign * 2);
+      ctx.lineTo(-2, sign * 14);
+      ctx.lineTo(6, sign * 3);
+      ctx.closePath();
+      ctx.fillStyle = pal.accent;
+      ctx.strokeStyle = pal.edge;
+      ctx.fill();
+      ctx.stroke();
+    });
+    ctx.beginPath();
+    ctx.moveTo(10, 0);
+    ctx.lineTo(18, 0);
+    ctx.lineTo(12, 3);
+    ctx.lineTo(12, -3);
+    ctx.closePath();
+    ctx.fillStyle = pal.accent;
+    ctx.fill();
+    ctx.stroke();
+  } else if (e.kind === 'boss') {
+    ctx.fillStyle = pal.body;
+    ctx.strokeStyle = pal.edge;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(22, 0);
+    ctx.lineTo(8, 12);
+    ctx.lineTo(-16, 10);
+    ctx.lineTo(-20, 0);
+    ctx.lineTo(-16, -10);
+    ctx.lineTo(8, -12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    [-1, 1].forEach(function(sign) {
+      ctx.beginPath();
+      ctx.moveTo(-4, sign * 10);
+      ctx.lineTo(-10, sign * 22);
+      ctx.lineTo(6, sign * 12);
+      ctx.closePath();
+      ctx.fillStyle = pal.glow;
+      ctx.strokeStyle = pal.accent;
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(4, sign * 6);
+      ctx.lineTo(0, sign * 16);
+      ctx.lineTo(10, sign * 8);
+      ctx.closePath();
+      ctx.fillStyle = pal.accent;
+      ctx.fill();
+      ctx.stroke();
+    });
+    ctx.beginPath();
+    ctx.arc(6, 0, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff4466';
+    ctx.fill();
+    ctx.strokeStyle = pal.edge;
+    ctx.stroke();
+  } else {
+    ctx.fillStyle = pal.body;
+    ctx.strokeStyle = pal.edge;
+    ctx.beginPath();
+    ctx.arc(0, 0, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  if (e.flash > 0) {
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(0, 0, e.kind === 'boss' ? 18 : 11, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+
 function draw() {
   ctx.fillStyle = '#050518';
   ctx.fillRect(0, 0, W, H);
@@ -532,16 +733,7 @@ function draw() {
       ctx.fill();
       ctx.globalAlpha = 1;
     }
-    ctx.font = (e.kind === 'boss' ? 46 : (e.kind === 'rock' ? 38 : (e.kind === 'mid' ? 34 : 26))) + 'px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(enemyFace(e), e.x, e.y + 1);
-    if (e.flash > 0) {
-      ctx.fillStyle = 'rgba(255,255,255,.55)';
-      ctx.beginPath();
-      ctx.arc(e.x, e.y, e.r * 0.7, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    drawEnemyShip(e);
     if (e.kind === 'mid') {
       const fm = e.fuseMax || 15;
       const fill = Math.max(0.04, Math.min(1, (e.fuse == null ? fm : e.fuse) / fm));
