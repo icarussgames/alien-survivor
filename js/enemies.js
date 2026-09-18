@@ -340,10 +340,11 @@ function ramEnemy(e) {
 function rollDrop(x, y) {
   const roll = Math.random();
   const rate = itemDropRate();
-  if (roll < rate) return { kind:'heal', x:x, y:y, v:0, r:8 };
-  if (roll < rate * 2) return { kind:'bomb', x:x, y:y, v:0, r:8 };
-  if (roll < rate * 3) return { kind:'magnet', x:x, y:y, v:0, r:8 };
-  if (roll < rate * 4) return { kind:'star', x:x, y:y, v:0, r:8 };
+  // Heal + bomb take most of the item band; magnet/star stay rarer.
+  if (roll < rate * 1.35) return { kind:'heal', x:x, y:y, v:0, r:8 };
+  if (roll < rate * 2.7) return { kind:'bomb', x:x, y:y, v:0, r:8 };
+  if (roll < rate * 3.2) return { kind:'magnet', x:x, y:y, v:0, r:8 };
+  if (roll < rate * 3.7) return { kind:'star', x:x, y:y, v:0, r:8 };
   return { kind:'gem', x:x, y:y, v:1, r:6 };
 }
 

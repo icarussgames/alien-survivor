@@ -62,8 +62,9 @@ function waveSpawn() {
 }
 
 function itemDropRate() {
-  if (!WAVE_DIR) return 0.03;
-  if (WAVE_DIR.id === 'spike') return 0.07;
-  if (WAVE_DIR.id === 'hard') return 0.05;
-  return 0.03;
+  // Higher base so heals/bombs show up often; wave heat still scales it.
+  if (!WAVE_DIR) return 0.08;
+  if (WAVE_DIR.id === 'spike') return 0.14;
+  if (WAVE_DIR.id === 'hard') return 0.11;
+  return 0.08;
 }

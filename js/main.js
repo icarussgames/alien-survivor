@@ -78,6 +78,7 @@ function hurt(n) {
 }
 
 function endRun() {
+  stopMusic();
   setScreen('over');
   document.getElementById('fTime').textContent = fmt(aliveTime);
   document.getElementById('fRun').textContent = runGems;
@@ -183,6 +184,7 @@ function openItemMode() {
 
 function startRun() {
   initAudio();
+  startMusic();
   player = {
     x:300, y:300, r:14, hp:maxHp(), maxHp:maxHp(),
     ang:0, ifr:0, shoot:0.25, cone:0.5,
@@ -210,6 +212,7 @@ function startRun() {
 }
 
 function exitStageToMenu() {
+  stopMusic();
   hyper = 0;
   stageClear = 0;
   setScreen('menu');
