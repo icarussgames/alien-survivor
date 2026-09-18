@@ -19,7 +19,7 @@ function resetEnemies() {
   lastBossTier = -1;
   lastMidTier = 0;
   rockT = 2.5;
-  goldRockT = 12 + Math.random() * 10;
+  goldRockT = 24 + Math.random() * 20;
   boomRings = [];
   bossesDown = 0;
 }
@@ -147,7 +147,7 @@ function maybeAsteroid(dt) {
   }
   goldRockT -= dt;
   if (goldRockT <= 0) {
-    goldRockT = 18 + Math.random() * 14;
+    goldRockT = 36 + Math.random() * 28;
     spawnAsteroid(true);
   }
 }

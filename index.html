@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Alien Survivor</title>
-<link rel="stylesheet" href="css/style.css?v=27">
+<link rel="stylesheet" href="css/style.css?v=28">
 </head>
 <body>
 <div id="shell">
@@ -14,18 +14,20 @@
     <div class="card">HP <span id="hp" class="hp">150</span></div>
     <div class="card">💎 <span id="runGems" class="mag">0</span> · <span id="lifeGems" class="mag">0</span></div>
   </div>
-  <div id="bossHud" class="hidden">
-    <span class="boss-label">BOSS</span>
-    <div class="boss-track"><i id="bossHp"></i></div>
-  </div>
-  <div id="starHud" class="hidden">
-    <span class="star-label">⭐</span>
-    <div class="star-track"><i id="starBar"></i></div>
-  </div>
   <div id="bar"><i id="xp"></i></div>
 </div>
 <div id="wrap">
   <canvas id="c" width="600" height="600"></canvas>
+  <div id="fieldHud">
+    <div id="bossHud" class="hidden">
+      <span class="boss-label">BOSS</span>
+      <div class="boss-track"><i id="bossHp"></i></div>
+    </div>
+    <div id="starHud" class="hidden">
+      <span class="star-label">⭐</span>
+      <div class="star-track"><i id="starBar"></i></div>
+    </div>
+  </div>
   <div id="banner" class="hidden"></div>
 
   <div id="menu" class="overlay">
@@ -120,18 +122,18 @@
 </div>
 </div>
 <button id="fsBtn" type="button" aria-label="Fullscreen">⛶</button>
-<script src="js/data.js?v=27"></script>
-<script src="js/state.js?v=27"></script>
-<script src="js/audio.js?v=27"></script>
-<script src="js/levels.js?v=27"></script>
-<script src="js/player.js?v=27"></script>
-<script src="js/buffs.js?v=27"></script>
-<script src="js/items.js?v=27"></script>
-<script src="js/waves.js?v=27"></script>
-<script src="js/enemies.js?v=27"></script>
-<script src="js/economy.js?v=27"></script>
-<script src="js/gallery.js?v=27"></script>
-<script src="js/input.js?v=27"></script>
-<script src="js/main.js?v=27"></script>
+<script src="js/data.js?v=28"></script>
+<script src="js/state.js?v=28"></script>
+<script src="js/audio.js?v=28"></script>
+<script src="js/levels.js?v=28"></script>
+<script src="js/player.js?v=28"></script>
+<script src="js/buffs.js?v=28"></script>
+<script src="js/items.js?v=28"></script>
+<script src="js/waves.js?v=28"></script>
+<script src="js/enemies.js?v=28"></script>
+<script src="js/economy.js?v=28"></script>
+<script src="js/gallery.js?v=28"></script>
+<script src="js/input.js?v=28"></script>
+<script src="js/main.js?v=28"></script>
 </body>
 </html>
