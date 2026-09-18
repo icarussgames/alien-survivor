@@ -501,7 +501,8 @@ function gradeFrame() {
 }
 
 
-function enemyPalette(kind) {
+function enemyPalette(kind, e) {
+  if (e && e.gold) return { body:'#d4a017', edge:'#ffe566', glow:'#8a5a00', accent:'#fff3a8' };
   if (kind === 'shooter') return { body:'#3a6ea5', edge:'#9fd4ff', glow:'#224466', accent:'#cfefff' };
   if (kind === 'whip') return { body:'#a67c00', edge:'#ffe08a', glow:'#664400', accent:'#fff1a8' };
   if (kind === 'boss') return { body:'#7a1028', edge:'#ff6688', glow:'#440014', accent:'#ff88aa' };
@@ -511,7 +512,7 @@ function enemyPalette(kind) {
 }
 
 function drawEnemyShip(e) {
-  const pal = enemyPalette(e.kind);
+  const pal = enemyPalette(e.kind, e);
   const s = Math.max(0.75, (e.r || 13) / 13);
   let ang = e.ang;
   if (ang == null) {
@@ -527,17 +528,24 @@ function drawEnemyShip(e) {
   ctx.lineWidth = 1.5;
 
   if (e.kind === 'rock') {
+    if (e.gold) {
+      ctx.beginPath();
+      ctx.arc(0, 0, 14, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,200,60,.22)';
+      ctx.fill();
+    }
     ctx.beginPath();
     const pts = e.rockPts || [[10,0],[6,8],[-2,11],[-10,5],[-9,-6],[-1,-11],[8,-7]];
     pts.forEach(function(p, i){ if (i === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]); });
     ctx.closePath();
     ctx.fillStyle = pal.body;
     ctx.strokeStyle = pal.edge;
+    ctx.lineWidth = e.gold ? 2.2 : 1.5;
     ctx.fill();
     ctx.stroke();
     ctx.beginPath();
     ctx.moveTo(-2, -3); ctx.lineTo(3, 1); ctx.lineTo(-1, 4);
-    ctx.strokeStyle = 'rgba(0,0,0,.35)';
+    ctx.strokeStyle = e.gold ? 'rgba(255,240,160,.55)' : 'rgba(0,0,0,.35)';
     ctx.stroke();
   } else if (e.kind === 'mid') {
     ctx.beginPath();

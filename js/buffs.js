@@ -7,7 +7,7 @@ var BUFF_DEFS = [
   { id:'pierce',  name:'Piercing',        icon:'🏹', max:3, desc:'Shots pass through enemies.' },
   { id:'orbit',   name:'Orbit Orbs',      icon:'🟣', max:5, desc:'Swirling damaging balls around you.' },
   { id:'pulse',   name:'Pulse Nova',      icon:'💫', max:5, desc:'Periodic shockwave nearby.' },
-  { id:'shield',  name:'Shield',          icon:'🛡️', max:3, desc:'Absorbs hits; regenerates after a delay.' },
+  { id:'shield',  name:'Shield',          icon:'🛡️', max:2, desc:'Blocks 1–2 enemy shots; respawns after a short delay.' },
   { id:'thorns',  name:'Thorns Aura',     icon:'🌺', max:5, desc:'Damages enemies near you.' },
   { id:'magnet',  name:'Magnet Field',    icon:'🧲', max:5, desc:'Wider gem pull radius.' },
   { id:'vital',   name:'Vitality',        icon:'❤️', max:5, desc:'+max HP and heal a bit.' },
@@ -72,8 +72,8 @@ function applyBuff(id) {
     flashAt(player.x, player.y, 24, 'rgba(80,255,160,.95)');
   }
   if (id === 'shield' && player) {
-    player.shieldMax = lv;
-    player.shieldCharges = Math.min(lv, (player.shieldCharges|0) + 1);
+    player.shieldMax = lv; // 1 at first pick, 2 at second
+    player.shieldCharges = lv;
     player.shieldRegen = 0;
   }
   if (id === 'orbit') syncBuffOrbs();
@@ -196,7 +196,7 @@ function tickBuffs(dt) {
       player.shieldRegen = (player.shieldRegen || 0) - dt;
       if (player.shieldRegen <= 0) {
         player.shieldCharges = (player.shieldCharges|0) + 1;
-        player.shieldRegen = (player.shieldCharges < player.shieldMax) ? 7.5 : 0;
+        player.shieldRegen = (player.shieldCharges < player.shieldMax) ? 5 : 0;
         flashAt(player.x, player.y, 20, 'rgba(120,200,255,.85)');
         beep(700, 0.06, 'sine', 0.04);
       }
@@ -281,7 +281,7 @@ function tryAbsorbShield() {
   player.shieldCharges -= 1;
   player.ifr = 0.7;
   player.hitFlash = 0.15;
-  player.shieldRegen = 7.5;
+  player.shieldRegen = 5;
   flashAt(player.x, player.y, 28, 'rgba(120,200,255,.95)');
   beep(520, 0.1, 'triangle', 0.05);
   return true;
