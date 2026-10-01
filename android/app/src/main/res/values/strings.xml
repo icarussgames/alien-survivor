@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Alien Survivor</string>
+    <string name="title_activity_main">Alien Survivor</string>
+    <string name="package_name">com.icarussgames.aliensurvivor</string>
+    <string name="custom_url_scheme">com.icarussgames.aliensurvivor</string>
+</resources>

@@ -74,16 +74,28 @@ function takeHealOrBomb(kind) {
     else applyBombPickup();
     return true;
   }
-  if (!addItem(kind)) return false;
+  if (!addItem(kind)) {
+    if (typeof banner === 'function') banner(kind === 'heal' ? 'HEAL FULL' : 'BOMB FULL');
+    beep(180, 0.06, 'square', 0.04);
+    refreshItems();
+    return false;
+  }
   refreshItems();
   return true;
 }
 
+function paintStock(numId, btnId, n, cap) {
+  const el = document.getElementById(numId);
+  const btn = document.getElementById(btnId);
+  if (el) el.textContent = n + '/' + cap;
+  if (btn) btn.classList.toggle('full', n >= cap);
+}
+
 function refreshItems() {
-  const h = document.getElementById('healN');
-  const b = document.getElementById('bombN');
-  if (h) h.textContent = player ? player.heal : 0;
-  if (b) b.textContent = player ? player.bombs : 0;
+  const heal = player ? player.heal : 0;
+  const bombs = player ? player.bombs : 0;
+  paintStock('healN', 'useHeal', heal, healCap());
+  paintStock('bombN', 'useBomb', bombs, bombCap());
 }
 
 function autoUseItems() {

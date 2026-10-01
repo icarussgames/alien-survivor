@@ -12,10 +12,11 @@ function loadSave() {
       gal: raw.gal || ['surv','shot'],
       skin: raw.skin || 'surv',
       photo: raw.photo|0 || 1,
-      cosm: raw.cosm || {}
+      cosm: raw.cosm || {},
+      pilot: raw.pilot || ''
     };
   } catch (e) {
-    return { gems:0, life:0, up:{}, gal:['surv','shot'], skin:'surv', photo:1, cosm:{} };
+    return { gems:0, life:0, up:{}, gal:['surv','shot'], skin:'surv', photo:1, cosm:{}, pilot:'' };
   }
 }
 
@@ -28,6 +29,7 @@ function unlock(id) {
   persist();
 }
 function freshSave() {
-  save = { gems:0, life:0, up:{}, gal:['surv','shot'], skin:'surv', photo:1, cosm:{} };
+  const pilot = save && save.pilot || '';
+  save = { gems:0, life:0, up:{}, gal:['surv','shot'], skin:'surv', photo:1, cosm:{}, pilot:pilot };
   persist();
 }

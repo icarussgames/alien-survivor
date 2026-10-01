@@ -5,12 +5,13 @@ const ctx = canvas.getContext('2d');
 
 function setScreen(name) {
   screen = name;
-  ['menu','over','level','stage','shop','gal','lib','itemMode','chrome','pad'].forEach(function(n){
+  ['menu','over','level','stage','shop','gal','lib','itemMode','chrome','pad','ships'].forEach(function(n){
     const el = document.getElementById(n);
     if (!el) return;
     const show = n === name || (name === 'play' && (n === 'chrome' || n === 'pad'));
     el.classList.toggle('hidden', !show);
   });
+  if (typeof fitLayout === 'function') fitLayout();
 }
 
 function fmt(sec) {
@@ -218,10 +219,11 @@ function shootAt(target) {
   function fireBolt(aa) {
     const spd = 420;
     const range = Math.max(W, H) * 1.15;
+    const lance = pilotEdge() === 'atk';
     shots.push({
       x:player.x, y:player.y, vx:Math.cos(aa)*spd, vy:Math.sin(aa)*spd,
-      r:3.5, dmg:dmgNow(), life:range / spd, c:'#00ffff',
-      pierceLeft:pierce, hit:[], shape:'line', len:14
+      r:3.5, dmg:dmgNow(), life:range / spd, c: lance ? '#ffd2a8' : '#00ffff',
+      pierceLeft:pierce, hit:[], shape:'line', len: lance ? 22 : 14
     });
   }
   fireBolt(a);
@@ -296,6 +298,90 @@ function applyPick(id) {
   setScreen('play');
 }
 
+function shipById(id) {
+  for (let i = 0; i < CHARS.length; i++) {
+    if (CHARS[i].id === id) return CHARS[i];
+  }
+  return null;
+}
+
+function renderShips() {
+  const grid = document.getElementById('shipGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  CHARS.forEach(function(char) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ship-card' + (save.pilot === char.id ? ' on' : '');
+    const img = document.createElement('img');
+    img.src = char.base;
+    img.alt = char.pilot;
+    const name = document.createElement('b');
+    name.textContent = char.pilot;
+    const ship = document.createElement('span');
+    ship.textContent = char.ship;
+    const edge = document.createElement('span');
+    edge.className = 'ship-edge';
+    edge.textContent = char.edgeLabel || '';
+    const preview = document.createElement('canvas');
+    preview.className = 'ship-preview';
+    preview.width = 132;
+    preview.height = 60;
+    const g = preview.getContext('2d');
+    g.translate(58, 30);
+    g.scale(1.45, 1.45);
+    paintHull(g, char.edge, { a:'#7af7ff', b:'#16324a' });
+    b.appendChild(img);
+    b.appendChild(preview);
+    b.appendChild(name);
+    b.appendChild(ship);
+    b.appendChild(edge);
+    b.onclick = function(){ chooseShip(char.id); };
+    grid.appendChild(b);
+  });
+}
+
+function paintPilotChip() {
+  const chip = document.getElementById('pilotChip');
+  if (!chip) return;
+  const char = shipById(save.pilot);
+  chip.innerHTML = '';
+  if (!char) {
+    chip.textContent = 'Choose a ship';
+    const blank = document.getElementById('pilotPortraitImg');
+    if (blank) { blank.removeAttribute('src'); blank.alt = ''; }
+    return;
+  }
+  const img = document.createElement('img');
+  img.src = char.base;
+  img.alt = '';
+  const label = document.createElement('span');
+  label.textContent = char.pilot + ' · ' + char.ship + (char.edgeLabel ? ' · ' + char.edgeLabel : '');
+  chip.appendChild(img);
+  chip.appendChild(label);
+  const portrait = document.getElementById('pilotPortraitImg');
+  if (portrait) {
+    portrait.src = char.base;
+    portrait.alt = char.pilot;
+  }
+}
+
+function chooseShip(id) {
+  const char = shipById(id);
+  if (!char) return;
+  save.pilot = id;
+  const idx = CHARS.indexOf(char);
+  if (idx >= 0) galIndex = idx;
+  persist();
+  paintPilotChip();
+  setScreen('menu');
+}
+
+function openShips() {
+  renderShips();
+  setScreen('ships');
+}
+
 function openItemMode() {
   loadItemMode();
   ['modePickup','modeCritical','modeManual'].forEach(function(id){
@@ -313,6 +399,7 @@ function startRun() {
   startMusic();
   player = {
     x:300, y:300, r:14, hp:maxHp(), maxHp:maxHp(),
+    vx:0, vy:0, thrust:0,
     ang:0, ifr:0, shoot:0.25, cone:0.5,
     mods:{ dmg:0, rate:0, mag:0, spread:0 },
     heal: owned('cura0')|0, bombs: owned('bomba0')|0, hitFlash:0, healFlash:0, star:0, starMax:5,
@@ -414,15 +501,42 @@ function update(dt) {
     spawnT = wave.every;
   }
 
+  // Stick, keys, and pad add thrust. The ship keeps its speed and bleeds it off slowly.
   const mv = moveVector();
   const len = Math.hypot(mv.x, mv.y);
+  const maxSpd = moveSpeed();
+  let cap = maxSpd;
   if (len > 0.08) {
-    player.x += (mv.x / len) * moveSpeed() * dt;
-    player.y += (mv.y / len) * moveSpeed() * dt;
-    player.ang = Math.atan2(mv.y, mv.x);
+    const mag = Math.min(1, len);
+    const nx = mv.x / len;
+    const ny = mv.y / len;
+    const accel = maxSpd * 2.6;
+    player.vx += nx * mag * accel * dt;
+    player.vy += ny * mag * accel * dt;
+    player.ang = Math.atan2(ny, nx);
+    player.thrust = mag;
+    cap = maxSpd * mag;
+  } else {
+    const bleed = Math.exp(-0.7 * dt);
+    player.vx *= bleed;
+    player.vy *= bleed;
+    player.thrust = 0;
+    if (Math.hypot(player.vx, player.vy) < 18) {
+      player.vx = 0;
+      player.vy = 0;
+    }
   }
-  player.x = Math.max(18, Math.min(W - 18, player.x));
-  player.y = Math.max(18, Math.min(H - 18, player.y));
+  const spd = Math.hypot(player.vx, player.vy);
+  if (spd > cap) {
+    player.vx *= cap / spd;
+    player.vy *= cap / spd;
+  }
+  player.x += player.vx * dt;
+  player.y += player.vy * dt;
+  if (player.x < 18) { player.x = 18; if (player.vx < 0) player.vx = 0; }
+  if (player.x > W - 18) { player.x = W - 18; if (player.vx > 0) player.vx = 0; }
+  if (player.y < 18) { player.y = 18; if (player.vy < 0) player.vy = 0; }
+  if (player.y > H - 18) { player.y = H - 18; if (player.vy > 0) player.vy = 0; }
   player.ifr = Math.max(0, player.ifr - dt);
   player.shoot -= dt;
   player.cone -= dt;
@@ -547,10 +661,12 @@ function drawDrop(g) {
 
 function tickExhaust(dt) {
   if (!player) return;
+  const thrust = player.thrust || 0;
   const back = player.ang + Math.PI;
-  player.exhaustAcc = (player.exhaustAcc || 0) + dt;
   const every = 0.026;
-  while (player.exhaustAcc >= every) {
+  if (thrust > 0.05) player.exhaustAcc = (player.exhaustAcc || 0) + dt * thrust;
+  else player.exhaustAcc = 0;
+  while (thrust > 0.05 && player.exhaustAcc >= every) {
     player.exhaustAcc -= every;
     const spread = (Math.random() - 0.5) * 0.4;
     const a = back + spread;
@@ -821,6 +937,106 @@ function drawEnemyShip(e) {
 }
 
 
+function pilotEdge() {
+  const ship = (save && typeof shipById === 'function') ? shipById(save.pilot) : null;
+  return (ship && ship.edge) || 'hp';
+}
+
+function hullPath(g, col, trace) {
+  g.beginPath();
+  trace();
+  g.closePath();
+  g.fillStyle = col.b;
+  g.strokeStyle = col.a;
+  g.fill();
+  g.stroke();
+}
+
+function paintScout(g, col) {
+  [-1, 1].forEach(function(s) {
+    hullPath(g, col, function() {
+      g.moveTo(3, s * 6);
+      g.lineTo(-1, s * 13);
+      g.lineTo(-9, s * 12);
+      g.lineTo(-7, s * 5);
+    });
+  });
+  hullPath(g, col, function() {
+    g.moveTo(13, 0);
+    g.lineTo(5, 8);
+    g.lineTo(-13, 8);
+    g.lineTo(-16, 0);
+    g.lineTo(-13, -8);
+    g.lineTo(5, -8);
+  });
+  g.beginPath();
+  g.arc(1, 0, 3.4, 0, Math.PI * 2);
+  g.fillStyle = col.a;
+  g.fill();
+}
+
+function paintLance(g, col) {
+  [-1, 1].forEach(function(s) {
+    hullPath(g, col, function() {
+      g.moveTo(1, s * 3);
+      g.lineTo(-7, s * 10);
+      g.lineTo(-11, s * 3);
+    });
+  });
+  hullPath(g, col, function() {
+    g.moveTo(5, 0);
+    g.lineTo(1, 5);
+    g.lineTo(-13, 4);
+    g.lineTo(-15, 0);
+    g.lineTo(-13, -4);
+    g.lineTo(1, -5);
+  });
+  g.beginPath();
+  g.moveTo(22, 0);
+  g.lineTo(5, 2.2);
+  g.lineTo(5, -2.2);
+  g.closePath();
+  g.fillStyle = col.a;
+  g.strokeStyle = col.a;
+  g.fill();
+  g.stroke();
+}
+
+function paintDart(g, col) {
+  [-1, 1].forEach(function(s) {
+    hullPath(g, col, function() {
+      g.moveTo(1, s * 2);
+      g.lineTo(-16, s * 16);
+      g.lineTo(-7, s * 2);
+    });
+  });
+  hullPath(g, col, function() {
+    g.moveTo(18, 0);
+    g.lineTo(-1, 3);
+    g.lineTo(-13, 2);
+    g.lineTo(-10, 0);
+    g.lineTo(-13, -2);
+    g.lineTo(-1, -3);
+  });
+  g.beginPath();
+  g.moveTo(-14, 0);
+  g.lineTo(-9, 2.4);
+  g.lineTo(-9, -2.4);
+  g.closePath();
+  g.fillStyle = col.a;
+  g.fill();
+}
+
+function paintHull(g, edge, col) {
+  g.save();
+  g.lineJoin = 'round';
+  g.lineWidth = 1.6;
+  if (edge === 'spd') paintDart(g, col);
+  else if (edge === 'atk') paintLance(g, col);
+  else paintScout(g, col);
+  g.restore();
+}
+
 function draw() {
   ctx.fillStyle = '#050518';
   ctx.fillRect(0, 0, W, H);
@@ -935,28 +1151,7 @@ function draw() {
   ctx.globalAlpha = player.ifr > 0 && !(player.star > 0) && Math.floor(player.ifr * 16) % 2 === 0 ? 0.35 : 1;
   ctx.translate(player.x, player.y);
   ctx.rotate(player.ang);
-  ctx.lineJoin = 'round';
-  ctx.lineWidth = 1.6;
-  function wing(sign) {
-    ctx.beginPath();
-    ctx.moveTo(13, sign * 4);
-    ctx.lineTo(9, sign * 7);
-    ctx.lineTo(-8, sign * 5);
-    ctx.lineTo(-13, sign * 16);
-    ctx.closePath();
-    ctx.fillStyle = col.b;
-    ctx.strokeStyle = col.a;
-    ctx.fill();
-    ctx.stroke();
-  }
-  wing(-1);
-  wing(1);
-  ctx.beginPath();
-  ctx.arc(1, 0, 5.2, 0, Math.PI * 2);
-  ctx.fillStyle = col.b;
-  ctx.fill();
-  ctx.strokeStyle = col.a;
-  ctx.stroke();
+  paintHull(ctx, pilotEdge(), col);
   if (player.hitFlash > 0) {
     ctx.fillStyle = 'rgba(255,60,80,.55)';
     ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI*2); ctx.fill();
@@ -1011,6 +1206,7 @@ function boot() {
     starsBg.push({ x:Math.random()*W, y:Math.random()*H, s:Math.random()*1.8+0.4, v:Math.random()*12+6 });
   }
   bindInput();
+  document.getElementById('pilotChip').onclick = openShips;
   document.getElementById('startBtn').onclick = openItemMode;
   document.getElementById('retryBtn').onclick = openItemMode;
   document.getElementById('itemModeBack').onclick = function(){ setScreen('menu'); };
@@ -1040,7 +1236,8 @@ function boot() {
   document.getElementById('wipe').onclick = function(){ freshSave(); openShop(); };
   const stageMenu = document.getElementById('stageMenu');
   if (stageMenu) stageMenu.onclick = exitStageToMenu;
-  setScreen('menu');
+  paintPilotChip();
+  openShips();
   requestAnimationFrame(loop);
 }
 

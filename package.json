@@ -1,0 +1,17 @@
+{
+  "name": "alien-survivor",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Alien Survivor Android wrapper",
+  "scripts": {
+    "apk": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-apk.ps1"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/app": "^7.0.2",
+    "@capacitor/core": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3"
+  }
+}

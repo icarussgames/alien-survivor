@@ -1,0 +1,8 @@
+{
+  "appId": "com.icarussgames.aliensurvivor",
+  "appName": "Alien Survivor",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}

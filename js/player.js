@@ -26,10 +26,23 @@ function bumpStat(id) {
   if (id === 'spd' || id === 'def' || id === 'atk' || id === 'mag') RUN[id] += 1;
 }
 
+function pilotShip() {
+  if (!save || typeof shipById !== 'function') return null;
+  return shipById(save.pilot);
+}
+
+function maxHp() {
+  const ship = pilotShip();
+  const bonus = ship && ship.hpBonus ? ship.hpBonus : 0;
+  return 150 + (owned('vida') ? 20 : 0) + bonus;
+}
+
 function moveNow() {
   const base = owned('botas') ? 190 : 145;
   const dash = (typeof buffLv === 'function' ? buffLv('dash') : 0);
-  return Math.round(base * (1 + RUN.spd * 0.06 + dash * 0.08));
+  const ship = pilotShip();
+  const mul = ship && ship.spdMul ? ship.spdMul : 1;
+  return Math.round(base * (1 + RUN.spd * 0.06 + dash * 0.08) * mul);
 }
 
 function fireNow() {
@@ -40,7 +53,9 @@ function fireNow() {
 function shotDmg() {
   const base = 1 + owned('dano');
   const heavy = (typeof buffLv === 'function' ? buffLv('heavy') : 0);
-  return Math.round(base * (1 + RUN.atk * 0.2 + heavy * 0.25) * 10) / 10;
+  const ship = pilotShip();
+  const mul = ship && ship.atkMul ? ship.atkMul : 1;
+  return Math.round(base * (1 + RUN.atk * 0.2 + heavy * 0.25) * mul * 10) / 10;
 }
 
 function takenDmg(n) {

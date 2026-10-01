@@ -18,9 +18,9 @@ const TREE = [
 ];
 
 const CHARS = [
-  { id:'char_1', level:1, base:'assets/char1_base.jpg', s1:{outfit:'assets/char1_t1.jpg', pose:'assets/char1_p1.jpg'}, s2:{outfit:'assets/char1_t2.jpg', pose:'assets/char1_p2.jpg'} },
-  { id:'char_2', level:2, base:'assets/char2_base.jpg', s1:{outfit:'assets/char2_t1.jpg', pose:'assets/char2_p1.jpg'}, s2:{outfit:'assets/char2_t2.jpg', pose:'assets/char2_p2.jpg'} },
-  { id:'char_3', level:3, base:'assets/char3_base.jpg', s1:{outfit:'assets/char3_t1.jpg', pose:'assets/char3_p1.jpg'}, s2:{outfit:'assets/char3_t2.jpg', pose:'assets/char3_p2.jpg'} }
+  { id:'char_1', level:1, pilot:'Lyra', ship:'Scout', edge:'hp', hpBonus:50, edgeLabel:'+50 HP', base:'assets/char1_base.jpg', s1:{outfit:'assets/char1_t1.jpg', pose:'assets/char1_p1.jpg'}, s2:{outfit:'assets/char1_t2.jpg', pose:'assets/char1_p2.jpg'} },
+  { id:'char_2', level:2, pilot:'Vesper', ship:'Lance', edge:'atk', atkMul:1.3, edgeLabel:'+30% ATK', base:'assets/char2_base.jpg', s1:{outfit:'assets/char2_t1.jpg', pose:'assets/char2_p1.jpg'}, s2:{outfit:'assets/char2_t2.jpg', pose:'assets/char2_p2.jpg'} },
+  { id:'char_3', level:3, pilot:'Nova', ship:'Dart', edge:'spd', spdMul:1.22, edgeLabel:'+22% SPD', base:'assets/char3_base.jpg', s1:{outfit:'assets/char3_t1.jpg', pose:'assets/char3_p1.jpg'}, s2:{outfit:'assets/char3_t2.jpg', pose:'assets/char3_p2.jpg'} }
 ];
 
 const PHOTO_AT = [25, 90, 220];

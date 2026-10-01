@@ -74,16 +74,20 @@ function bindInput() {
     const cl = Math.min(max, len);
     dx = dx / len * cl;
     dy = dy / len * cl;
-    knob.style.left = (r.width / 2 + dx - 21) + 'px';
-    knob.style.top = (r.height / 2 + dy - 21) + 'px';
+    knob.style.left = (r.width / 2 + dx - knob.offsetWidth / 2) + 'px';
+    knob.style.top = (r.height / 2 + dy - knob.offsetHeight / 2) + 'px';
     stick.on = len > 8;
     stick.x = dx / max;
     stick.y = dy / max;
   }
   function resetKnob() {
     stick.on = false; stick.x = 0; stick.y = 0;
-    knob.style.left = '33px';
-    knob.style.top = '33px';
+    const w = stickEl.clientWidth || 108;
+    const h = stickEl.clientHeight || 108;
+    const kw = knob.offsetWidth || 42;
+    const kh = knob.offsetHeight || 42;
+    knob.style.left = ((w - kw) / 2) + 'px';
+    knob.style.top = ((h - kh) / 2) + 'px';
   }
   let stickPointer = null;
   stickEl.addEventListener('pointerdown', function(ev){
@@ -165,9 +169,33 @@ function syncFsLabel() {
   if (icon) icon.textContent = on ? '⤢' : '⛶';
 }
 
+function fitApkArena() {
+  const wrap = document.getElementById('wrap');
+  const shell = document.getElementById('shell');
+  if (!wrap || !shell) return;
+  if (!document.body.classList.contains('apk-land')) {
+    wrap.style.width = '';
+    wrap.style.height = '';
+    return;
+  }
+  const cs = getComputedStyle(shell);
+  const cols = cs.gridTemplateColumns.split(' ').map(function(n){ return parseFloat(n) || 0; });
+  const rows = cs.gridTemplateRows.split(' ').map(function(n){ return parseFloat(n) || 0; });
+  const availW = cols.length >= 3 ? cols[1] : (cols[0] || shell.clientWidth);
+  const availH = rows.length >= 2 ? rows[1] : (rows[0] || shell.clientHeight);
+  const size = Math.max(64, Math.floor(Math.min(availW, availH)));
+  wrap.style.width = size + 'px';
+  wrap.style.height = size + 'px';
+}
+
 function fitLayout() {
+  const apk = document.documentElement.classList.contains('android-apk');
   const land = window.matchMedia('(orientation: landscape)').matches && window.innerWidth > window.innerHeight;
   const short = window.innerHeight <= 520;
   const touch = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
-  document.body.classList.toggle('land', !!(land && short && touch));
+  document.body.classList.toggle('apk-land', apk);
+  document.body.classList.toggle('land', !apk && !!(land && short && touch));
+  const phone = !apk && window.innerHeight > window.innerWidth && window.innerWidth <= 900;
+  document.body.classList.toggle('phone-ui', phone && !document.body.classList.contains('land'));
+  fitApkArena();
 }
