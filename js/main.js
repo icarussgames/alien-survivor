@@ -932,23 +932,31 @@ function paintEnemyArt(g, kind, pal) {
     g.strokeStyle = pal.edge; g.strokeRect(-2, -14, 4, 6);
     shipLines(g, [[-2, -12, 2, -12], [-2, -10, 2, -10]], 'rgba(0,0,0,.45)', 0.6);
   } else if (kind === 'normal') {
-    // Box scout with four cone thrusters.
-    [-1, 1].forEach(function(sign) {
-      [-5, 5].forEach(function(fx) {
-        shipPlate(g, [[fx - 3, sign*9], [fx + 3, sign*9], [fx, sign*17]], pal.accent, pal.edge, false);
-        shipLines(g, [[fx, sign*10, fx, sign*15]], 'rgba(0,0,0,.35)', 0.6);
-      });
-    });
-    shipPlate(g, [[-9,-9],[9,-9],[9,9],[-9,9]], pal.body, pal.edge);
-    shipPlate(g, [[-7,-7],[6,-7],[6,7],[-7,7]], pal.body, 'rgba(255,255,255,.18)');
-    shipLines(g, [[-7,-3.5,-4,-3.5],[-7,3.5,-4,3.5],[-5.5,-7,-5.5,7]], 'rgba(0,0,0,.45)', 0.6);
-    g.fillStyle = pal.glow; g.fillRect(-3, -4, 8, 8);
-    g.fillStyle = pal.edge; g.globalAlpha = 0.5; g.fillRect(-2, -3, 6, 2); g.globalAlpha = 1;
-    g.fillStyle = pal.accent; g.fillRect(4, -3, 5, 6);
-    g.fillStyle = pal.edge; g.fillRect(9, -3, 5, 6);
-    g.fillStyle = '#20262e'; g.fillRect(12.5, -1.5, 1.5, 3);
-    g.fillStyle = pal.edge;
-    [[-8,-8],[8,-8],[-8,8],[8,8]].forEach(function(p){ g.fillRect(p[0]-0.6, p[1]-0.6, 1.2, 1.2); });
+    // Classic saucer (3/4 top view): underside glow, wide rim, raised deck, glass dome.
+    g.beginPath(); g.ellipse(0, 3, 14, 9, 0, 0, Math.PI * 2);
+    const ug = g.createRadialGradient(0, 3, 2, 0, 3, 14);
+    ug.addColorStop(0, 'rgba(180,255,140,.35)'); ug.addColorStop(1, 'rgba(120,255,100,0)');
+    g.fillStyle = ug; g.fill();
+    g.beginPath(); g.ellipse(0, 1.5, 13, 8.5, 0, 0, Math.PI * 2);
+    g.fillStyle = pal.glow; g.fill();
+    g.beginPath(); g.ellipse(0, 0, 13, 8, 0, 0, Math.PI * 2);
+    const rg = g.createLinearGradient(0, -8, 0, 8);
+    rg.addColorStop(0, pal.accent); rg.addColorStop(0.45, pal.body); rg.addColorStop(1, pal.glow);
+    g.fillStyle = rg; g.fill(); g.strokeStyle = pal.edge; g.lineWidth = 1.2; g.stroke();
+    g.beginPath(); g.ellipse(0, -0.5, 9, 5.2, 0, 0, Math.PI * 2);
+    g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 0.7; g.stroke();
+    for (let i = 0; i < 12; i++) {
+      const a = i * Math.PI / 6;
+      g.beginPath(); g.moveTo(Math.cos(a) * 9, -0.5 + Math.sin(a) * 5.2); g.lineTo(Math.cos(a) * 12.4, Math.sin(a) * 7.6); g.stroke();
+    }
+    g.beginPath(); g.ellipse(0, -2, 6, 4.6, 0, Math.PI, 0);
+    g.lineTo(6, -1); g.ellipse(0, -1, 6, 1.6, 0, 0, Math.PI); g.closePath();
+    const dg = g.createRadialGradient(-2, -5, 0.5, 0, -2, 7);
+    dg.addColorStop(0, '#f4fff0'); dg.addColorStop(0.35, '#9dffcf'); dg.addColorStop(1, '#0d4a3a');
+    g.fillStyle = dg; g.fill(); g.strokeStyle = pal.edge; g.lineWidth = 0.9; g.stroke();
+    g.beginPath(); g.ellipse(-2, -4.3, 2.2, 1, -0.3, 0, Math.PI * 2);
+    g.fillStyle = 'rgba(255,255,255,.8)'; g.fill();
+    g.beginPath(); g.arc(1, -2.6, 1.6, 0, Math.PI * 2); g.fillStyle = 'rgba(30,90,30,.8)'; g.fill();
   } else if (kind === 'shooter') {
     // Gun platform: armored box, turret dome, long barrel, swept wings.
     [-1, 1].forEach(function(sign) {
@@ -1053,7 +1061,15 @@ function drawEnemyLights(e, pal) {
   const t = aliveTime || 0;
   const ph = (e.x * 0.013 + e.y * 0.007);
   const on = Math.sin(t * 6 + ph * 10) > 0.2;
-  if (e.kind === 'normal') { shipLight(ctx, 12, 0, pal.accent, on); }
+  if (e.kind === 'normal') {
+    // Chasing rim lights spin slowly around the disc.
+    const head = Math.floor(t * 10 + ph * 7) % 10;
+    for (let i = 0; i < 10; i++) {
+      const a = i * Math.PI / 5 + t * 0.8;
+      const lit = i === head || i === (head + 5) % 10;
+      shipLight(ctx, Math.cos(a) * 11.2, Math.sin(a) * 6.9, lit ? '#ffffff' : pal.accent, lit || (i % 2 === 0 && on));
+    }
+  }
   else if (e.kind === 'shooter') { shipLight(ctx, -9, -10, '#ff4455', on); shipLight(ctx, -9, 10, '#44ff88', on); }
   else if (e.kind === 'whip') { shipLight(ctx, -1, -13, '#fff1a8', on); shipLight(ctx, -1, 13, '#fff1a8', !on); }
   else if (e.kind === 'mid') { shipLight(ctx, 0, -14.5, '#ff5522', on); }
@@ -1071,12 +1087,36 @@ function drawEnemyLights(e, pal) {
   }
 }
 
+function drawWhipChain(e) {
+  const pts = whipChainPoints(e);
+  const hit = e.whip > 0;
+  ctx.save();
+  ctx.strokeStyle = hit ? '#fff1a8' : 'rgba(255,209,102,.75)';
+  ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(e.x, e.y);
+  pts.forEach(function(p){ ctx.lineTo(p.x, p.y); });
+  ctx.stroke();
+  pts.forEach(function(p, i){
+    const tip = i === pts.length - 1;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = tip ? (hit ? '#ffffff' : '#ffd166') : '#a67c00';
+    ctx.fill();
+    ctx.strokeStyle = '#ffe08a'; ctx.lineWidth = 1; ctx.stroke();
+    if (tip) {
+      ctx.beginPath(); ctx.arc(p.x - 1.2, p.y - 1.2, 1.3, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fill();
+    }
+  });
+  ctx.restore();
+}
+
 function drawEnemyShip(e) {
   const pal = enemyPalette(e.kind, e);
   const s = Math.max(0.75, (e.r || 13) / 13);
-  let ang = e.ang;
+  let ang = e.kind === 'normal' ? 0 : e.ang;
   if (ang == null) {
     if (e.kind === 'rock') ang = (e.spin || 1) * (aliveTime || 0);
+    else if (e.kind === 'normal') ang = 0;
     else if (player) ang = Math.atan2(player.y - e.y, player.x - e.x);
     else ang = 0;
   }
@@ -1125,7 +1165,8 @@ function draw() {
   if (!player) return;
   gems.forEach(drawDrop);
   enemies.forEach(function(e){
-    if ((e.kind === 'whip' || e.kind === 'boss') && e.whip > 0) {
+    if (e.kind === 'whip') drawWhipChain(e);
+    if (e.kind === 'boss' && e.whip > 0) {
       const a = Math.atan2(player.y - e.y, player.x - e.x);
       const reach = e.kind === 'boss' ? 78 : 58;
       ctx.strokeStyle = '#ffd166';

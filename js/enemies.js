@@ -10,6 +10,22 @@ var lastMidTier = 0;
 var rockT = 0;
 var goldRockT = 0;
 var WHIP_REACH = 64;
+var WHIP_CHAIN_SPIN = 4.2;   // rad/s
+var WHIP_CHAIN_DMG = 12;
+
+// Always-spinning chain: links trail slightly behind the arm angle, tip reaches WHIP_REACH - 6.
+function whipChainPoints(e) {
+  const base = e.chain || 0;
+  const out = [];
+  const n = 5;
+  for (let i = 1; i <= n; i++) {
+    const f = i / n;
+    const a = base - f * 0.35;
+    const d = 14 + f * (WHIP_REACH - 20);
+    out.push({ x: e.x + Math.cos(a) * d, y: e.y + Math.sin(a) * d, r: i === n ? 4.5 : 2.4 });
+  }
+  return out;
+}
 var ENEMY_SPD_MUL = 0.9;
 
 function resetEnemies() {
@@ -243,10 +259,20 @@ function updateEnemies(dt) {
       enemyFire(e, 1);
     }
     if (e.kind === 'boss') bossAct(e, dist);
-    if (e.kind === 'whip' && dist < WHIP_REACH && e.shoot <= 0) {
-      e.shoot = 0.85;
-      e.whip = 0.16;
-      if (!(player.star > 0)) hurt(20);
+    if (e.kind === 'whip') {
+      if (e.chain == null) e.chain = Math.random() * Math.PI * 2;
+      e.chain += WHIP_CHAIN_SPIN * dt;
+      if (dist < WHIP_REACH + player.r && e.shoot <= 0 && !(player.star > 0)) {
+        const pts = whipChainPoints(e);
+        for (let i = 0; i < pts.length; i++) {
+          if (Math.hypot(pts[i].x - player.x, pts[i].y - player.y) < pts[i].r + player.r) {
+            e.shoot = 0.85;
+            e.whip = 0.16;
+            hurt(i === pts.length - 1 ? WHIP_CHAIN_DMG : Math.round(WHIP_CHAIN_DMG * 0.6));
+            break;
+          }
+        }
+      }
     }
     if (e.kind !== 'whip' && e.kind !== 'mid' && Math.hypot(e.x - player.x, e.y - player.y) < e.r + player.r - 2) {
       if (player.star > 0) ramEnemy(e);
