@@ -173,7 +173,7 @@ function fitApkArena() {
   const wrap = document.getElementById('wrap');
   const shell = document.getElementById('shell');
   if (!wrap || !shell) return;
-  if (!document.body.classList.contains('apk-land')) {
+  if (!document.body.classList.contains('apk-land') && !document.body.classList.contains('land')) {
     wrap.style.width = '';
     wrap.style.height = '';
     return;
@@ -181,8 +181,8 @@ function fitApkArena() {
   const cs = getComputedStyle(shell);
   const cols = cs.gridTemplateColumns.split(' ').map(function(n){ return parseFloat(n) || 0; });
   const rows = cs.gridTemplateRows.split(' ').map(function(n){ return parseFloat(n) || 0; });
-  const availW = cols.length >= 3 ? cols[1] : (cols[0] || shell.clientWidth);
-  const availH = rows.length >= 2 ? rows[1] : (rows[0] || shell.clientHeight);
+  const availW = cols.length >= 5 ? cols[2] : (cols[0] || shell.clientWidth);
+  const availH = rows[0] || shell.clientHeight;
   const size = Math.max(64, Math.floor(Math.min(availW, availH)));
   wrap.style.width = size + 'px';
   wrap.style.height = size + 'px';
@@ -197,5 +197,17 @@ function fitLayout() {
   document.body.classList.toggle('land', !apk && !!(land && short && touch));
   const phone = !apk && window.innerHeight > window.innerWidth && window.innerWidth <= 900;
   document.body.classList.toggle('phone-ui', phone && !document.body.classList.contains('land'));
+  placeFieldHud();
   fitApkArena();
+}
+
+// Landscape: boss/star bars live in their own column beside the field.
+// Portrait: they overlay the top of the field as before.
+function placeFieldHud() {
+  const fh = document.getElementById('fieldHud');
+  const wrap = document.getElementById('wrap');
+  if (!fh || !wrap) return;
+  const side = document.body.classList.contains('apk-land') || document.body.classList.contains('land');
+  if (side && fh.parentNode === wrap) wrap.parentNode.insertBefore(fh, wrap.nextSibling);
+  else if (!side && fh.parentNode !== wrap) wrap.insertBefore(fh, document.getElementById('banner'));
 }

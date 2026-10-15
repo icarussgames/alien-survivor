@@ -26,6 +26,11 @@ function banner(text) {
   bannerT = 2.2;
 }
 
+// Bars read --p: width in portrait, height in landscape (see css).
+function setFill(el, pct) {
+  if (el) el.style.setProperty('--p', pct + '%');
+}
+
 function hud() {
   document.getElementById('time').textContent = fmt(aliveTime);
   document.getElementById('hp').textContent = Math.max(0, Math.ceil(player ? player.hp : 0));
@@ -33,7 +38,12 @@ function hud() {
   document.getElementById('lifeGems').textContent = save.gems;
   const stats = document.getElementById('stats');
   if (stats) stats.textContent = typeof buffHudLine === 'function' ? buffHudLine() : ('SPD ' + RUN.spd + '  DEF ' + RUN.def + '  ATK ' + RUN.atk + '  MAG ' + RUN.mag);
-  document.getElementById('xp').style.width = Math.min(100, (xp / xpNeed) * 100) + '%';
+  setFill(document.getElementById('xp'), Math.min(100, (xp / xpNeed) * 100));
+  const hpFill = document.getElementById('hpFill');
+  if (hpFill) {
+    const mh = typeof maxHp === 'function' ? maxHp() : 0;
+    setFill(hpFill, player && mh > 0 ? Math.max(0, Math.min(100, (player.hp / mh) * 100)) : 0);
+  }
   const bossHud = document.getElementById('bossHud');
   const bossFill = document.getElementById('bossHp');
   let boss = null;
@@ -47,7 +57,7 @@ function hud() {
       const per = boss.max / bars;
       const leftLayers = Math.max(1, Math.ceil(boss.hp / per - 1e-6));
       const fill = Math.max(0, Math.min(1, (boss.hp - (leftLayers - 1) * per) / per));
-      bossFill.style.width = (fill * 100) + '%';
+      setFill(bossFill, fill * 100);
       let color = '#ff3366';
       if (leftLayers > 1) color = (bars >= 3 && leftLayers === 2) ? '#c084fc' : '#ffcc66';
       bossFill.style.background = color;
@@ -61,7 +71,7 @@ function hud() {
     if (player && player.star > 0) {
       starHud.classList.remove('hidden');
       const max = player.starMax || 5;
-      starFill.style.width = Math.max(0, Math.min(100, (player.star / max) * 100)) + '%';
+      setFill(starFill, Math.max(0, Math.min(100, (player.star / max) * 100)));
     } else {
       starHud.classList.add('hidden');
     }

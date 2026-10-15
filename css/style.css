@@ -21,14 +21,14 @@
   #bossHud.hidden { display:none !important; }
   .boss-label { color:#ff6688; font-weight:800; font-size:.78rem; letter-spacing:1px; }
   .boss-track { flex:1; height:10px; border-radius:99px; background:rgba(255,255,255,.1); overflow:hidden; border:1px solid rgba(255,80,120,.35); }
-  .boss-track > i { display:block; height:100%; width:100%; background:linear-gradient(90deg,#ff3366,#ffcc66); }
+  .boss-track > i { display:block; height:100%; width:var(--p,100%); background:linear-gradient(90deg,#ff3366,#ffcc66); }
   #starHud { display:flex; align-items:center; gap:8px; }
   #starHud.hidden { display:none !important; }
   .star-label { font-size:.9rem; }
   .star-track { flex:1; height:10px; border-radius:99px; background:rgba(255,255,255,.1); overflow:hidden; border:1px solid rgba(255,200,60,.45); }
-  .star-track > i { display:block; height:100%; width:100%; background:linear-gradient(90deg,#ffd24a,#fff1a0,#ffb000); box-shadow:0 0 8px rgba(255,200,60,.55); }
+  .star-track > i { display:block; height:100%; width:var(--p,100%); background:linear-gradient(90deg,#ffd24a,#fff1a0,#ffb000); box-shadow:0 0 8px rgba(255,200,60,.55); }
   #bar { height:8px; border-radius:99px; background:rgba(255,255,255,.08); overflow:hidden; }
-  #bar > i { display:block; height:100%; width:0%; background:linear-gradient(90deg,#39ff14,#00ffff); }
+  #bar > i { display:block; height:100%; width:var(--p,0%); background:linear-gradient(90deg,#39ff14,#00ffff); }
   .overlay { position:absolute; inset:0; background:rgba(3,3,15,.92); display:flex; flex-direction:column; align-items:center; justify-content:flex-start; z-index:20; padding:14px 12px 18px; text-align:center; backdrop-filter:blur(6px); overflow-y:auto; }
   .hidden { display:none !important; }
   h1 { font-size:1.7rem; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px; background:linear-gradient(45deg,#00ffff,#39ff14,#ff00ff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
@@ -120,38 +120,30 @@ body.land #shell {
   width:100%;
   max-width:none;
   max-height:100dvh;
-  height:100dvh;
-  flex-direction:row;
-  flex-wrap:wrap;
-  justify-content:center;
+  height:calc(100dvh - 16px);
+  display:grid;
+  grid-template-columns:auto auto minmax(0,1fr) auto auto;
+  grid-template-rows:minmax(0,1fr);
+  grid-template-areas:"dock lhud field rhud buttons";
+  gap:0 10px;
   align-items:center;
-  gap:8px;
-}
-body.land #chrome {
-  order:0;
-  flex:0 0 100%;
-  width:100%;
-  max-width:min(96vw, 900px);
-  margin:0 auto;
+  justify-items:center;
 }
 body.land #pad { display:contents; width:auto; padding:0; }
 body.land #pad.hidden { display:none !important; }
-body.land #stick {
-  order:1; width:92px; height:92px; flex:none; align-self:center;
-}
+body.land #leftDock { grid-area:dock; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+body.land #stick { width:92px; height:92px; flex:none; }
 body.land #wrap {
-  order:2;
-  width:min(66dvh, calc((100vw - 220px) * 0.85));
-  height:min(66dvh, calc((100vw - 220px) * 0.85));
+  grid-area:field;
   max-width:none;
   max-height:none;
   aspect-ratio:auto;
 }
-body.land .side {
-  order:3; align-self:center; align-items:center; flex:none;
-}
+body.land .side { grid-area:buttons; align-self:center; align-items:center; flex:none; }
 body.land .items { flex-direction:column; }
 body.land #stats { text-align:center; max-width:72px; line-height:1.35; }
+body.land:has(#pad.hidden) #shell { grid-template-columns:minmax(0,1fr); grid-template-areas:"field"; }
+body.land:has(#pad.hidden) #fieldHud { display:none; }
 
   .item-modes { width:min(92%, 420px); display:flex; flex-direction:column; gap:8px; margin:10px 0 6px; }
   .item-modes .pick { width:100%; text-align:left; }
@@ -228,6 +220,7 @@ html.android-apk #fsBtn,
 html.android-apk #fullBtn { display: none !important; }
 
 #leftDock { display: contents; }
+#hpBar { display: none; }
 #pilotPortrait { display: none; }
 
 /* App shell is locked to landscape. Left column is the pilot and the stick.
@@ -257,11 +250,9 @@ html.android-apk body.apk-land #shell {
   max-height: none;
   min-height: 0;
   display: grid;
-  grid-template-columns: var(--dock-w) minmax(0, 1fr) var(--btn-w);
-  grid-template-rows: auto minmax(0, 1fr);
-  grid-template-areas:
-    "dock hud buttons"
-    "dock field buttons";
+  grid-template-columns: var(--dock-w) auto minmax(0, 1fr) auto var(--btn-w);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "dock lhud field rhud buttons";
   gap: 6px 10px;
   align-items: stretch;
   justify-items: center;
@@ -305,14 +296,6 @@ html.android-apk body.apk-land #stick {
   margin-bottom: 2px;
   pointer-events: auto;
 }
-html.android-apk body.apk-land #chrome {
-  grid-area: hud;
-  width: 100%;
-  max-width: none;
-  align-self: center;
-  margin: 0;
-}
-html.android-apk body.apk-land #hud { flex-wrap: nowrap; }
 html.android-apk body.apk-land #wrap {
   grid-area: field;
   align-self: center;
@@ -340,7 +323,81 @@ html.android-apk body.apk-land #stats {
 }
 html.android-apk body.apk-land:has(#pad.hidden) #shell {
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas:
-    "hud"
-    "field";
+  grid-template-areas: "field";
+}
+html.android-apk body.apk-land:has(#pad.hidden) #fieldHud { display: none; }
+
+/* ===== Landscape side HUD: nothing above, below or over the field. =====
+   Left column (#chrome): time, vertical HP + XP bars, HP number, gems.
+   Right column (#fieldHud): vertical boss + star bars, space always reserved. */
+body.land #chrome,
+html.android-apk body.apk-land #chrome {
+  grid-area: lhud;
+  width: auto; max-width: none; margin: 0;
+  height: 100%; max-height: 360px; align-self: center;
+  display: grid;
+  grid-template-columns: 22px 12px;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-areas: "time time" "hpbar xpbar" "hpnum hpnum" "gems gems";
+  justify-content: center; justify-items: center;
+  gap: 6px 6px;
+}
+body.land #chrome.hidden,
+html.android-apk body.apk-land #chrome.hidden { display: none !important; }
+body.land #hud,
+html.android-apk body.apk-land #hud { display: contents; }
+body.land .card,
+html.android-apk body.apk-land .card { padding: 4px 6px; font-size: .74rem; text-align: center; }
+body.land .card-time,
+html.android-apk body.apk-land .card-time { grid-area: time; }
+body.land .card-hp,
+html.android-apk body.apk-land .card-hp { grid-area: hpnum; }
+body.land .card-gems,
+html.android-apk body.apk-land .card-gems { grid-area: gems; white-space: normal; max-width: 64px; line-height: 1.3; }
+body.land #hpBar,
+html.android-apk body.apk-land #hpBar {
+  display: block; grid-area: hpbar; width: 22px; height: 100%;
+  border: 1px solid rgba(255,80,120,.5);
+}
+body.land #bar,
+html.android-apk body.apk-land #bar { grid-area: xpbar; width: 12px; height: 100%; }
+.vbar { position: relative; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
+body.land #hpBar > i,
+html.android-apk body.apk-land #hpBar > i {
+  position: absolute; left: 0; right: 0; bottom: 0; height: var(--p, 100%);
+  background: linear-gradient(0deg, #ff3366, #ff88aa);
+}
+body.land #bar,
+html.android-apk body.apk-land #bar { position: relative; }
+body.land #bar > i,
+html.android-apk body.apk-land #bar > i {
+  position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: var(--p, 0%);
+  background: linear-gradient(0deg, #39ff14, #00ffff);
+}
+body.land #fieldHud,
+html.android-apk body.apk-land #fieldHud {
+  grid-area: rhud; position: static;
+  height: 100%; max-height: 360px; align-self: center;
+  display: flex; flex-direction: row; gap: 6px;
+}
+body.land #fieldHud #bossHud, body.land #fieldHud #starHud,
+html.android-apk body.apk-land #fieldHud #bossHud,
+html.android-apk body.apk-land #fieldHud #starHud {
+  display: flex !important; flex-direction: column-reverse; align-items: center;
+  gap: 4px; padding: 4px 3px; height: 100%; backdrop-filter: none;
+}
+body.land #fieldHud #bossHud.hidden, body.land #fieldHud #starHud.hidden,
+html.android-apk body.apk-land #fieldHud #bossHud.hidden,
+html.android-apk body.apk-land #fieldHud #starHud.hidden { visibility: hidden; }
+body.land .boss-label,
+html.android-apk body.apk-land .boss-label { writing-mode: vertical-rl; transform: rotate(180deg); font-size: .7rem; }
+body.land .boss-track, body.land .star-track,
+html.android-apk body.apk-land .boss-track,
+html.android-apk body.apk-land .star-track { position: relative; flex: 1; width: 18px; height: auto; }
+body.land .star-track,
+html.android-apk body.apk-land .star-track { width: 12px; }
+body.land .boss-track > i, body.land .star-track > i,
+html.android-apk body.apk-land .boss-track > i,
+html.android-apk body.apk-land .star-track > i {
+  position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: var(--p, 100%);
 }
