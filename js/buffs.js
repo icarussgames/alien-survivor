@@ -11,7 +11,7 @@ var BUFF_DEFS = [
   { id:'thorns',  name:'Thorns Aura',     icon:'🌺', max:5, desc:'Damages enemies near you.' },
   { id:'magnet',  name:'Magnet Field',    icon:'🧲', max:5, desc:'Wider gem pull radius.' },
   { id:'vital',   name:'Vitality',        icon:'❤️', max:5, desc:'+max HP and heal a bit.' },
-  { id:'dash',    name:'Dash Thrusters',  icon:'🚀', max:5, desc:'Move faster.' },
+  { id:'dash',    name:'Dash Thrusters',  icon:'🚀', max:5, desc:'Dash: shorter cooldown, longer reach.' },
   { id:'missile', name:'Missile Barrage', icon:'🎯', max:5, desc:'Periodic homing side missiles.' }
 ];
 

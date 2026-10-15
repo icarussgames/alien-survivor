@@ -43,8 +43,9 @@ function pollGamepad() {
     return;
   }
   if (screen === 'play') {
-    // Cross / Square / L1 heal. Circle / R1 bomb. Standard map covers DualSense.
-    if (edge('heal', pressed(0) || pressed(2) || pressed(4))) useHeal();
+    // A / Cross or RT dash. Square / X or L1 heal. Circle / B or R1 bomb.
+    if (edge('dash', pressed(0) || pressed(7))) tryDash();
+    if (edge('heal', pressed(2) || pressed(4))) useHeal();
     if (edge('bomb', pressed(1) || pressed(5))) useBomb();
   }
 }
@@ -108,6 +109,8 @@ function bindInput() {
     resetKnob();
   }
   stickEl.addEventListener('pointerup', endStick);
+  const dashBtn = document.getElementById('useDash');
+  if (dashBtn) dashBtn.addEventListener('pointerdown', function(ev){ ev.preventDefault(); initAudio(); tryDash(); });
   stickEl.addEventListener('pointercancel', endStick);
 
   window.addEventListener('keydown', function(ev){
@@ -124,6 +127,7 @@ function bindInput() {
     if (screen !== 'play') return;
     const move = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyW','KeyA','KeyS','KeyD'].indexOf(ev.code) >= 0;
     if (move) ev.preventDefault();
+    if ((ev.code === 'Space' || ev.code === 'ShiftLeft' || ev.code === 'ShiftRight') && !ev.repeat) { ev.preventDefault(); tryDash(); }
     if (ev.code === 'Digit1' || ev.key === 'q' || ev.key === 'Q') useHeal();
     if (ev.code === 'Digit2' || ev.key === 'e' || ev.key === 'E') useBomb();
     keys[ev.code] = true;

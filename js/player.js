@@ -39,10 +39,9 @@ function maxHp() {
 
 function moveNow() {
   const base = owned('botas') ? 190 : 145;
-  const dash = (typeof buffLv === 'function' ? buffLv('dash') : 0);
   const ship = pilotShip();
   const mul = ship && ship.spdMul ? ship.spdMul : 1;
-  return Math.round(base * (1 + RUN.spd * 0.06 + dash * 0.08) * mul);
+  return Math.round(base * (1 + RUN.spd * 0.06) * mul);
 }
 
 function fireNow() {
@@ -137,4 +136,58 @@ function specialFace(kind) {
     if (BOSS_REWARDS[i].kind === kind) return BOSS_REWARDS[i].face;
   }
   return '✳️';
+}
+
+// ==================== DASH DODGE ====================
+// Base tuning. Dash Thrusters buff: -0.3s cooldown and +12% distance per level.
+var DASH_CD = 2.5;        // seconds
+var DASH_DIST = 110;      // px
+var DASH_TIME = 0.16;     // burst duration
+var DASH_IFR = 0.25;      // invulnerable window
+
+function dashLv() { return typeof buffLv === 'function' ? buffLv('dash') : 0; }
+function dashCooldown() { return Math.max(1, DASH_CD - 0.3 * dashLv()); }
+function dashDistance() { return DASH_DIST * (1 + 0.12 * dashLv()); }
+
+function tryDash() {
+  if (screen !== 'play' || !player || player.dying || player.hp <= 0) return false;
+  if ((player.dashCd || 0) > 0) return false;
+  const mv = typeof moveVector === 'function' ? moveVector() : { x:0, y:0 };
+  let len = Math.hypot(mv.x, mv.y);
+  let nx, ny;
+  if (len > 0.08) { nx = mv.x / len; ny = mv.y / len; }
+  else { nx = Math.cos(player.ang || 0); ny = Math.sin(player.ang || 0); }
+  player.dashDx = nx; player.dashDy = ny;
+  player.dashT = DASH_TIME;
+  player.dashIfr = DASH_IFR;
+  player.dashCdMax = dashCooldown();
+  player.dashCd = player.dashCdMax;
+  player.dashTrail = player.dashTrail || [];
+  player.ang = Math.atan2(ny, nx);
+  if (typeof beep === 'function') beep(520, 0.08, 'triangle', 0.04);
+  return true;
+}
+
+// Returns true while the dash owns movement this frame.
+function tickDash(dt) {
+  player.dashCd = Math.max(0, (player.dashCd || 0) - dt);
+  player.dashIfr = Math.max(0, (player.dashIfr || 0) - dt);
+  const trail = player.dashTrail || (player.dashTrail = []);
+  for (let i = trail.length - 1; i >= 0; i--) { trail[i].life -= dt; if (trail[i].life <= 0) trail.splice(i, 1); }
+  if (!(player.dashT > 0)) return false;
+  const v = dashDistance() / DASH_TIME;
+  player.vx = player.dashDx * v;
+  player.vy = player.dashDy * v;
+  player.dashT -= dt;
+  player.dashTrailT = (player.dashTrailT || 0) - dt;
+  if (player.dashTrailT <= 0) {
+    player.dashTrailT = 0.045;
+    trail.push({ x: player.x, y: player.y, ang: player.ang, life: 0.22 });
+  }
+  if (player.dashT <= 0) {
+    const keep = moveSpeed();
+    player.vx = player.dashDx * keep;
+    player.vy = player.dashDy * keep;
+  }
+  return true;
 }

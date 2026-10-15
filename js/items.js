@@ -96,6 +96,16 @@ function refreshItems() {
   const bombs = player ? player.bombs : 0;
   paintStock('healN', 'useHeal', heal, healCap());
   paintStock('bombN', 'useBomb', bombs, bombCap());
+  const db = document.getElementById('useDash');
+  if (db) {
+    const cd = player ? (player.dashCd || 0) : 0;
+    const max = player ? (player.dashCdMax || dashCooldown()) : 1;
+    const ready = cd <= 0;
+    db.style.setProperty('--cd', (ready ? 0 : cd / max * 100) + '%');
+    db.classList.toggle('ready', ready);
+    const lbl = document.getElementById('dashN');
+    if (lbl) lbl.textContent = ready ? 'DASH' : cd.toFixed(1);
+  }
 }
 
 function autoUseItems() {

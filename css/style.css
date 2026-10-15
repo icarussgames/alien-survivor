@@ -401,3 +401,14 @@ html.android-apk body.apk-land .boss-track > i,
 html.android-apk body.apk-land .star-track > i {
   position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: var(--p, 100%);
 }
+
+/* Dash button: conic sweep shows remaining cooldown. */
+.items #useDash {
+  position: relative; overflow: hidden;
+  border-color: rgba(122,247,255,.55);
+  background:
+    conic-gradient(rgba(2,4,12,.78) var(--cd, 0%), transparent 0),
+    rgba(10,40,60,.92);
+}
+.items #useDash.ready { border-color: #7af7ff; box-shadow: 0 0 10px rgba(122,247,255,.35); }
+.items #useDash span { font-variant-numeric: tabular-nums; }

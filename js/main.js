@@ -89,7 +89,7 @@ function flashAt(x, y, r, color) {
   flashes.push({ x:x, y:y, r:r, life:0.16, color:color });
 }
 function hurt(n) {
-  if (!player || player.dying || player.ifr > 0 || player.star > 0) return;
+  if (!player || player.dying || player.ifr > 0 || player.dashIfr > 0 || player.star > 0) return;
   if (typeof tryAbsorbShield === 'function' && tryAbsorbShield()) return;
   player.hp -= takenDmg(n);
   player.ifr = 0.6;
@@ -512,11 +512,14 @@ function update(dt) {
   }
 
   // Stick, keys, and pad add thrust. The ship keeps its speed and bleeds it off slowly.
+  const dashing = tickDash(dt);
   const mv = moveVector();
   const len = Math.hypot(mv.x, mv.y);
   const maxSpd = moveSpeed();
   let cap = maxSpd;
-  if (len > 0.08) {
+  if (dashing) {
+    cap = Infinity;
+  } else if (len > 0.08) {
     const mag = Math.min(1, len);
     const nx = mv.x / len;
     const ny = mv.y / len;
@@ -1254,7 +1257,15 @@ function draw() {
     ctx.arc(player.x, player.y, 20 + Math.sin(aliveTime * 14) * 3, 0, Math.PI * 2);
     ctx.stroke();
   }
+  (player.dashTrail || []).forEach(function(tr){
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, tr.life / 0.22) * 0.35;
+    ctx.translate(tr.x, tr.y); ctx.rotate(tr.ang);
+    paintHull(ctx, pilotEdge(), col, 0);
+    ctx.restore();
+  });
   ctx.globalAlpha = player.ifr > 0 && !(player.star > 0) && Math.floor(player.ifr * 16) % 2 === 0 ? 0.35 : 1;
+  if (player.dashIfr > 0) ctx.globalAlpha = 0.55;
   ctx.translate(player.x, player.y);
   ctx.rotate(player.ang);
   paintHull(ctx, pilotEdge(), col, aliveTime || 0);
